@@ -5,6 +5,7 @@ import com.autodiag.AutoDiagIA.communication.SerialPortManager;
 import com.autodiag.AutoDiagIA.obd.ObdClient;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.obd.ObdResponseParser;
 import com.autodiag.AutoDiagIA.telemetry.TelemetryCollector;
 import com.fazecast.jSerialComm.SerialPort;
 import org.springframework.boot.CommandLineRunner;
@@ -53,6 +54,8 @@ public class AutoDiagIaApplication implements CommandLineRunner {
     for (ObdReading reading : readings) {
         System.out.println(reading);
     }
+
+
 
 
 
