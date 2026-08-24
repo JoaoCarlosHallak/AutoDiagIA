@@ -2,6 +2,8 @@ package com.autodiag.AutoDiagIA;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import com.autodiag.AutoDiagIA.communication.SerialPortManager;
+import com.autodiag.AutoDiagIA.obd.ObdClient;
+import com.autodiag.AutoDiagIA.obd.ObdPid;
 import com.fazecast.jSerialComm.SerialPort;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -31,7 +33,10 @@ public class AutoDiagIaApplication implements CommandLineRunner {
 
     Elm327Client elm327Client = new Elm327Client(port);
 
-    elm327Client.startCommunicationConsole();
+        ObdClient obdClient = new ObdClient(elm327Client);
+
+        System.out.println(obdClient.read(ObdPid.ENGINE_RPM));
+
 
     SerialPortManager.closeCommPort(port);
 	}
