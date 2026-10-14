@@ -7,6 +7,9 @@ import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 public class ObdResponseParser {
 
     public static double parse(String response, ObdPid pid) {
+
+        System.out.println("Parsing OBD response: " + response + " for PID: " + pid
+        );
         try {
             if (response == null || response.isBlank()) {
                 throw new IllegalArgumentException(
@@ -14,7 +17,7 @@ public class ObdResponseParser {
                 );
             }
 
-            String[] bytes = response.trim().split("\\s+");
+            String[] bytes = response.trim().split("\\\s+");
 
             if (bytes.length < 3) {
                 throw new IllegalArgumentException(

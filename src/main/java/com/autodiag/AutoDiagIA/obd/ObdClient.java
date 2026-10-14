@@ -21,6 +21,8 @@ public class ObdClient {
 
         String response =
                 elm327Client.sendCommand(command.toCommand());
+        System.out.println("Comando enviado: " + command.toCommand());
+        System.out.println("Resposta recebida: [" + response + "]");
 
         double value =
                 ObdResponseParser.parse(response, pid);
