@@ -28,16 +28,12 @@ public class ObdClient {
         System.out.println("Comando enviado: " + command.toCommand());
         System.out.println("Resposta recebida: [" + response + "]");
 
-        double value =
+        ObdReading reading =
                 ObdResponseParser.parse(response, pid);
 
-        return new ObdReading(
-                pid.getDescription(),
-                value,
-                pid.getUnit(),
-                Instant.now()
-        );
+        return reading;
     }
 
 
 }
+
