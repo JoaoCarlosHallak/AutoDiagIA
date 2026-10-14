@@ -1,46 +1,57 @@
 package com.autodiag.AutoDiagIA.obd;
 
+
+import com.autodiag.AutoDiagIA.exception.ObdResponseException;
+
+
 public class ObdResponseParser {
 
     public static double parse(String response, ObdPid pid) {
+        try {
+            if (response == null || response.isBlank()) {
+                throw new IllegalArgumentException(
+                    "Resposta OBD vazia."
+                );
+            }
 
-        if (response == null || response.isBlank()) {
-            throw new IllegalArgumentException("Resposta OBD vazia.");
-        }
+            String[] bytes = response.trim().split("\\s+");
 
-        String[] bytes = response.trim().split("\\s+");
-
-        if (bytes.length < 3) {
-            throw new IllegalArgumentException(
+            if (bytes.length < 3) {
+                throw new IllegalArgumentException(
                     "Resposta OBD inválida: " + response
-            );
-        }
+                );
+            }
 
-        if (!bytes[0].equalsIgnoreCase("41")) {
-            throw new IllegalArgumentException(
+            if (!bytes[0].equalsIgnoreCase("41")) {
+                throw new IllegalArgumentException(
                     "Resposta não corresponde ao Mode 01: " + response
-            );
-        }
+                );
+            }
 
-        if (!bytes[1].equalsIgnoreCase(pid.getCode())) {
-            throw new IllegalArgumentException(
+            if (!bytes[1].equalsIgnoreCase(pid.getCode())) {
+                throw new IllegalArgumentException(
                     "PID inesperado: " + response
+                );
+            }
+
+            return switch (pid) {
+                case ENGINE_RPM -> parseRpm(bytes);
+
+                case VEHICLE_SPEED -> parseVehicleSpeed(bytes);
+
+                case ENGINE_COOLANT_TEMPERATURE -> parseCoolantTemperature(bytes);
+            };
+
+        } catch (IllegalArgumentException e) {
+            throw new ObdResponseException(
+                "Falha ao analisar a resposta OBD: " + response
+                    + " | Motivo: " + e.getMessage(),
+                e
             );
         }
-
-        return switch (pid) {
-
-            case ENGINE_RPM -> parseRpm(bytes);
-
-            case VEHICLE_SPEED -> parseVehicleSpeed(bytes);
-
-            case ENGINE_COOLANT_TEMPERATURE ->
-                    parseCoolantTemperature(bytes);
-        };
     }
 
     private static double parseRpm(String[] bytes) {
-
         int a = Integer.parseInt(bytes[2], 16);
         int b = Integer.parseInt(bytes[3], 16);
 
@@ -48,17 +59,11 @@ public class ObdResponseParser {
     }
 
     private static double parseVehicleSpeed(String[] bytes) {
-
-        int a = Integer.parseInt(bytes[2], 16);
-
-        return a;
+        return Integer.parseInt(bytes[2], 16);
     }
 
     private static double parseCoolantTemperature(String[] bytes) {
-
-        int a = Integer.parseInt(bytes[2], 16);
-
-        return a - 40;
+        return Integer.parseInt(bytes[2], 16) - 40;
     }
 }
 

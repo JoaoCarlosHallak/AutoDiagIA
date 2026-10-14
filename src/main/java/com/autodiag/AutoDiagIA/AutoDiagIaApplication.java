@@ -36,13 +36,9 @@ public class AutoDiagIaApplication implements CommandLineRunner {
     );
 
     Elm327Client elm327Client = new Elm327Client(port);
-    elm327Client.startCommunicationConsole();
+    ObdClient obdClient = new ObdClient(elm327Client);
 
-    /* 
-
-        ObdClient obdClient = new ObdClient(elm327Client);
-
-        List<ObdPid> pids = List.of(
+    List<ObdPid> pids = List.of(
         ObdPid.ENGINE_RPM,
         ObdPid.VEHICLE_SPEED,
         ObdPid.ENGINE_COOLANT_TEMPERATURE
@@ -59,11 +55,9 @@ public class AutoDiagIaApplication implements CommandLineRunner {
     }
 
 
+    
 
 
-*/
-
-    SerialPortManager.closeCommPort(port);
 	}
 }
 

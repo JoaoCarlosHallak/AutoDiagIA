@@ -1,4 +1,5 @@
 package com.autodiag.AutoDiagIA.communication;
+import com.autodiag.AutoDiagIA.exception.Elm327CommunicationException;
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class Elm327Client {
 
 
     public String sendCommand(String command) throws IOException {
+        try {
 
         out.write((command + "\r").getBytes(StandardCharsets.US_ASCII));
         out.flush();
@@ -50,8 +52,10 @@ public class Elm327Client {
         }
 
         return builder.toString().trim();
-
+    } catch (IOException e) {
+            throw new Elm327CommunicationException("Erro na comunicação com o ELM327: " + e.getMessage(), e);
     }
+}
 
 
     public static void showElm327Commands() {
