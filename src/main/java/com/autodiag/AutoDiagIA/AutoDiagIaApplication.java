@@ -25,7 +25,7 @@ public class AutoDiagIaApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-    SerialPort port = SerialPortManager.getCommPort("COM1");
+    SerialPort port = SerialPortManager.getCommPort("COM4");
 
     SerialPortManager.openAndSetCommPort(
             port,

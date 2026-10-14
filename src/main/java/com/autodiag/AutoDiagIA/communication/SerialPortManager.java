@@ -14,11 +14,14 @@ public class SerialPortManager {
         return SerialPort.getCommPort(portName);
     }
 
-
+//"Continue lendo os bytes até o ELM327 mandar >."
+//
+//O > é o prompt do ELM327, indicando que terminou aquela resposta.
 
     public static void openAndSetCommPort(SerialPort port, int baudRate, int numDataBits, int numStopBits, int parity) {
         port.setBaudRate(baudRate);
         port.setNumDataBits(numDataBits);
+        port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 3000, 0); // 3 SEGUNDOS DE TIMEOUT
         port.setNumStopBits(numStopBits);
         port.setParity(parity);
 
@@ -45,9 +48,6 @@ public class SerialPortManager {
 
 
 }
-
-
-
 
 
 

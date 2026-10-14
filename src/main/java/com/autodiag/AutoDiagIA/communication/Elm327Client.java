@@ -1,11 +1,11 @@
 package com.autodiag.AutoDiagIA.communication;
-
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class Elm327Client {
@@ -28,15 +28,29 @@ public class Elm327Client {
         out.write((command + "\r").getBytes(StandardCharsets.US_ASCII));
         out.flush();
 
-        byte[] buffer = new byte[1024];
-        int bytesRead = in.read(buffer);
 
-        return new String(
-            buffer,
-            0,
-            bytesRead,
-            StandardCharsets.US_ASCII
-        );
+        StringBuilder builder = new StringBuilder();
+
+        long timeout = System.currentTimeMillis() + 3000;
+
+        while (System.currentTimeMillis() < timeout) {
+
+            if (in.available() > 0) {
+
+                int data = in.read();
+
+                if (data == '>') {
+                    break;
+                }
+
+                builder.append((char) data);
+            }
+
+
+        }
+
+        return builder.toString().trim();
+
     }
 
 
