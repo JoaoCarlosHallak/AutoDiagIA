@@ -1,7 +1,7 @@
 package com.autodiag.AutoDiagIA.obd;
 
-public record ObdCommand(ObdMode obdMode, ObdPid obdPid) {
+public record ObdCommand(ObdPid obdPid) {
     public String toCommand() {
-        return obdMode.getCode() + " " + obdPid.getCode();
+        return "01" + " " + obdPid.getCode();
     }
 }

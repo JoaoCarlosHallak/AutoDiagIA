@@ -36,6 +36,9 @@ public class AutoDiagIaApplication implements CommandLineRunner {
     );
 
     Elm327Client elm327Client = new Elm327Client(port);
+    elm327Client.startCommunicationConsole();
+
+    /* 
 
         ObdClient obdClient = new ObdClient(elm327Client);
 
@@ -58,7 +61,7 @@ public class AutoDiagIaApplication implements CommandLineRunner {
 
 
 
-
+*/
 
     SerialPortManager.closeCommPort(port);
 	}

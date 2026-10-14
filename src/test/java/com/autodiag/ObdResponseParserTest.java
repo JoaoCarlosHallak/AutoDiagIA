@@ -1,6 +1,9 @@
-package com.autodiag.AutoDiagIA.obd;
+package com.autodiag;
 
 import org.junit.Test;
+
+import com.autodiag.AutoDiagIA.obd.ObdPid;
+import com.autodiag.AutoDiagIA.obd.ObdResponseParser;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;

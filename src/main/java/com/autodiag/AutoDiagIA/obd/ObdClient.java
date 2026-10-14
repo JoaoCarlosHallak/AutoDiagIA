@@ -17,7 +17,7 @@ public class ObdClient {
     public ObdReading read(ObdPid pid) throws IOException {
 
         ObdCommand command =
-                new ObdCommand(ObdMode.CURRENT_DATA, pid);
+                new ObdCommand(pid);
 
         String response =
                 elm327Client.sendCommand(command.toCommand());
@@ -26,7 +26,7 @@ public class ObdClient {
                 ObdResponseParser.parse(response, pid);
 
         return new ObdReading(
-                pid,
+                pid.getDescription(),
                 value,
                 pid.getUnit(),
                 Instant.now()
