@@ -24,10 +24,13 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
 
     @Override
-    public List<ObdReading> getPidsData(List<String> pids)
-            throws IOException {
+    public List<ObdReading> getPidsData(List<String> pids) throws IOException {
 
         List<ObdPid> validPids = new ArrayList<>();
+
+        if(pids.contains("all")){
+            return telemetryCollector.collect(List.of(ObdPid.values()));
+        }
 
         for (String pid : pids) {
             try {
