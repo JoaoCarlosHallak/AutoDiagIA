@@ -55,4 +55,31 @@ public enum ObdPid {
     public String getUnit() {
         return unit;
     }
+
+
+
+    public static ObdPid fromString(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("PID não informado.");
+        }
+
+        String normalized = value.trim().toLowerCase();
+
+        return switch (normalized) {
+            case "rpm", "engine_rpm", "giro" -> ENGINE_RPM;
+
+            case "speed", "vehicle_speed", "velocidade" -> VEHICLE_SPEED;
+
+            case "coolant_temperature", "engine_coolant_temperature",
+                "temperatura", "temperatura_motor" -> ENGINE_COOLANT_TEMPERATURE;
+
+            default -> throw new IllegalArgumentException(
+                "PID desconhecido: " + value
+            );
+        };
+    }
+
+
+
+
 }

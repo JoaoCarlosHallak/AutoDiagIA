@@ -25,37 +25,7 @@ public class AutoDiagIaApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 
-    SerialPort port = SerialPortManager.getCommPort("COM4");
 
-    SerialPortManager.openAndSetCommPort(
-            port,
-            38400,
-            8,
-            SerialPort.ONE_STOP_BIT,
-            SerialPort.NO_PARITY
-    );
-
-    Elm327Client elm327Client = new Elm327Client(port);
-    ObdClient obdClient = new ObdClient(elm327Client);
-
-    List<ObdPid> pids = List.of(
-        ObdPid.ENGINE_RPM,
-        ObdPid.VEHICLE_SPEED,
-        ObdPid.ENGINE_COOLANT_TEMPERATURE
-);
-
-    TelemetryCollector collector =
-            new TelemetryCollector(obdClient);
-
-    List<ObdReading> readings =
-            collector.collect(pids);
-
-    for (ObdReading reading : readings) {
-        System.out.println(reading);
-    }
-
-
-    
 
 
 	}

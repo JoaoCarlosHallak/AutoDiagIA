@@ -5,6 +5,10 @@ import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import java.io.IOException;
 import java.time.Instant;
 
+import org.springframework.stereotype.Component;
+
+
+@Component 
 public class ObdClient {
 
     private final Elm327Client elm327Client;

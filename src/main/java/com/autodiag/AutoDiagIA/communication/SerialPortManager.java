@@ -6,17 +6,7 @@ import com.fazecast.jSerialComm.SerialPort;
 
 public class SerialPortManager {
 
-    public static SerialPort[] getCommPorts() {
-        return SerialPort.getCommPorts();
-    }
 
-    public static SerialPort getCommPort(String portName) {
-        return SerialPort.getCommPort(portName);
-    }
-
-//"Continue lendo os bytes até o ELM327 mandar >."
-//
-//O > é o prompt do ELM327, indicando que terminou aquela resposta.
 
     public static void openAndSetCommPort(SerialPort port, int baudRate, int numDataBits, int numStopBits, int parity) {
         port.setBaudRate(baudRate);
