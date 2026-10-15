@@ -20,6 +20,19 @@ public class ObdResponseParser {
 
             String[] bytes = response.trim().split("\\\s+");
 
+            if (bytes.length >= 4
+                        && bytes[0].equalsIgnoreCase("7F")
+                        && bytes[1].equalsIgnoreCase("01")) {
+
+                String rejectedPid = bytes[2];
+                String errorCode = bytes[3];
+
+                throw new ObdResponseException(
+                        "ECU rejeitou o PID " + rejectedPid
+                        + ". Código de resposta: " + errorCode
+                );
+                }            
+
             if (bytes.length < 2
                     || !bytes[0].equalsIgnoreCase("41")
                     || !bytes[1].equalsIgnoreCase(pid.getCode())) {
@@ -34,6 +47,11 @@ public class ObdResponseParser {
                 throw new IllegalArgumentException(
                         "Resposta incompleta para o PID " + pid.getCode());
             }
+
+
+
+
+
 
             int[] data = new int[pid.getDataBytes()];
 

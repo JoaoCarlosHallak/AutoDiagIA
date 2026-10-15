@@ -1,6 +1,7 @@
 package com.autodiag.AutoDiagIA.obd;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
+import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -28,10 +29,13 @@ public class ObdClient {
         System.out.println("Comando enviado: " + command.toCommand());
         System.out.println("Resposta recebida: [" + response + "]");
 
-        ObdReading reading =
+        try {
+            ObdReading reading =
                 ObdResponseParser.parse(response, pid);
-
-        return reading;
+            return reading;
+        } catch (IllegalArgumentException e) {
+            throw new ObdResponseException("Falha ao ler o PID " + pid.getCode(), e);
+        }
     }
 
 
