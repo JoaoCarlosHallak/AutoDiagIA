@@ -14,8 +14,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.autodiag.AutoDiagIA.dto.CollectionRequest;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
 import com.autodiag.AutoDiagIA.service.TelemetryService;
+import com.autodiag.AutoDiagIA.telemetry.TelemetryScheduler;
+import com.sun.net.httpserver.HttpServer;
 
 
 @RestController 
@@ -24,10 +27,12 @@ public class TelemetryController {
 
 
     private final TelemetryService telemetryService;
+    private final TelemetryScheduler telemetryScheduler;
 
     @Autowired 
-    public TelemetryController(TelemetryService telemetryService) {
+    public TelemetryController(TelemetryService telemetryService, TelemetryScheduler telemetryScheduler) {
         this.telemetryService = telemetryService;
+        this.telemetryScheduler = telemetryScheduler;
     }
 
 
@@ -45,12 +50,22 @@ public class TelemetryController {
     }
     
     
+    @PostMapping("/collection/start")
+    public ResponseEntity<String> startCollection(@RequestBody CollectionRequest request) {
+        telemetryScheduler.start(request.pids(), request.intervalMs());
+        return new ResponseEntity<>("Collection started", HttpStatus.OK);
+    }
 
+    @PostMapping("/collection/stop")
+    public ResponseEntity<String> stopCollection() {
+        telemetryScheduler.stop();
+        return new ResponseEntity<>("Collection stopped", HttpStatus.OK);
+    }
 
-
-
-
-
+    @GetMapping("/collection/status")
+    public ResponseEntity<Boolean> collectionStatus() {
+        return new ResponseEntity<>(telemetryScheduler.isRunning(),HttpStatus.OK);
+    }
 
 
 
