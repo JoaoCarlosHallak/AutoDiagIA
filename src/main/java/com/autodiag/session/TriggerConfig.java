@@ -2,7 +2,7 @@ package com.autodiag.session;
 
 public record TriggerConfig(
         String pid,
-        int valueIndex,
+        Integer valueIndex,
         TriggerOperator operator,
-        double triggerValue
+        Double triggerValue
 ) {}
