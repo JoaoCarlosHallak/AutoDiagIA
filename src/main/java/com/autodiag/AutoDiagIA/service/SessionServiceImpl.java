@@ -3,6 +3,11 @@ package com.autodiag.AutoDiagIA.service;
 import java.time.Instant;
 import java.util.List;
 
+import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.session.SessionEndReason;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,15 +27,19 @@ public class SessionServiceImpl implements SessionService {
 
     private final SessionRepository sessionRepository;
     private final SessionPidRepository sessionPidRepository;
+    private final ModelMapper modelMapper;
+
 
     @Autowired 
-    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository) {
+    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper) {
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
+        this.modelMapper = modelMapper;
     }
 
+    @Override
     @Transactional
-    public Session create(CreateSessionRequest request) {
+    public SessionDTO create(CreateSessionRequest request) {
 
         if (request.pids() == null || request.pids().isEmpty()) {
             throw new IllegalArgumentException(
@@ -58,11 +67,11 @@ public class SessionServiceImpl implements SessionService {
 
         if (request.trigger() != null) {
             session.setTriggerPid(
-                    ObdPid.fromString(request.trigger().pid()).getCode()
+                    ObdPid.fromString(request.trigger().getPid()).getCode()
             );
-            session.setTriggerOperator(request.trigger().operator());
-            session.setTriggerValue(request.trigger().triggerValue());
-            session.setTriggerValueIndex(request.trigger().valueIndex());
+            session.setTriggerOperator(request.trigger().getOperator());
+            session.setTriggerValue(request.trigger().getTriggerValue());
+            session.setTriggerValueIndex(request.trigger().getValueIndex());
         }
 
         Session savedSession = sessionRepository.save(session);
@@ -78,6 +87,55 @@ public class SessionServiceImpl implements SessionService {
 
         sessionPidRepository.saveAll(sessionPids);
 
-        return savedSession;
+        return modelMapper.map(savedSession, SessionDTO.class);
+    }
+
+    @Override
+    public SessionDTO start(Long id) {
+
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Sessão de id: " + id + " inexistente"
+                ));
+
+        if (session.getStatus() != SessionStatus.CREATED) {
+            throw new IllegalStateException(
+                    "Não é possível iniciar uma sessão no estado "
+                            + session.getStatus()
+            );
+        }
+
+        session.setStartedAt(Instant.now());
+        session.setStatus(SessionStatus.RUNNING);
+
+        sessionRepository.save(session);
+
+        return modelMapper.map(session, SessionDTO.class);
+    }
+
+
+    @Override
+    public SessionDTO stop(Long id) {
+
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Sessão de id: " + id + " inexistente"
+                ));
+
+        if (session.getStatus() != SessionStatus.RUNNING) {
+            throw new IllegalStateException(
+                    "Não é possível encerrar uma sessão no estado "
+                            + session.getStatus()
+            );
+        }
+
+        session.setStatus(SessionStatus.FINISHED);
+        session.setFinishedAt(Instant.now());
+        session.setEndReason(SessionEndReason.USER_STOPPED);
+
+        sessionRepository.save(session);
+
+        return modelMapper.map(session, SessionDTO.class);
     }
 }
+
