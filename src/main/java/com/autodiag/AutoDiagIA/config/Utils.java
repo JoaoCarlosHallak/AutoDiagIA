@@ -1,6 +1,8 @@
 package com.autodiag.AutoDiagIA.config;
 
+import com.autodiag.AutoDiagIA.dto.LogDTO;
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
@@ -36,6 +38,16 @@ public class Utils {
                 map().setTriggerValue(source.getTriggerConfig().getTriggerValue());
                 map().setTriggerValueIndex(source.getTriggerConfig().getValueIndex());
             }
+        });
+
+        modelMapper.addMappings(new PropertyMap<Log, LogDTO>() {
+
+            @Override
+            protected void configure() {
+                map().setSessionId(source.getSession().getId());
+            }
+
+
         });
 
         return modelMapper;

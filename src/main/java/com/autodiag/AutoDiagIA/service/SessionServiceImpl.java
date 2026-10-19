@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.session.SessionEndReason;
-import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +27,16 @@ public class SessionServiceImpl implements SessionService {
     private final SessionRepository sessionRepository;
     private final SessionPidRepository sessionPidRepository;
     private final ModelMapper modelMapper;
+    private final SessionExecutionService sessionExecutionService;
 
 
     @Autowired 
-    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper) {
+    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService) {
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
         this.modelMapper = modelMapper;
+        this.sessionExecutionService = sessionExecutionService;
+
     }
 
     @Override
@@ -110,6 +112,16 @@ public class SessionServiceImpl implements SessionService {
 
         sessionRepository.save(session);
 
+        try {
+            sessionExecutionService.start(session.getId());
+        } catch (RuntimeException e) {
+            sessionExecutionService.finish(
+                    session.getId(),
+                    SessionEndReason.ERROR
+            );
+            throw e;
+        }
+
         return modelMapper.map(session, SessionDTO.class);
     }
 
@@ -129,13 +141,27 @@ public class SessionServiceImpl implements SessionService {
             );
         }
 
-        session.setStatus(SessionStatus.FINISHED);
-        session.setFinishedAt(Instant.now());
-        session.setEndReason(SessionEndReason.USER_STOPPED);
+        sessionExecutionService.finish(
+                id,
+                SessionEndReason.USER_STOPPED
+        );
 
-        sessionRepository.save(session);
+        session = sessionRepository.findById(id).orElseThrow();
 
         return modelMapper.map(session, SessionDTO.class);
+    }
+
+    @Override
+    public List<SessionDTO> findAll() {
+        return sessionRepository.findAll().stream().map(session -> modelMapper.map(session, SessionDTO.class)).toList();
+    }
+
+    @Override
+    public SessionDTO findById(Long id){
+        return modelMapper.map(
+                sessionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Sessão de id: " + id + " inexistente")),
+                SessionDTO.class);
+
     }
 }
 

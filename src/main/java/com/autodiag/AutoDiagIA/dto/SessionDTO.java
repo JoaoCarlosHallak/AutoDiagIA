@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 public class SessionDTO{
+    private Long sessionId;
     private String vehicle;
     private String startReason;
     private SessionStatus status;
@@ -19,7 +20,7 @@ public class SessionDTO{
     private SessionEndReason endReason;
 
 
-    public SessionDTO(String vehicle, String startReason, SessionStatus status, AnalysisMode analysisMode, long intervalMs, long maxDurationMs, TriggerConfig triggerConfig, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
+    public SessionDTO(Long sessionId, String vehicle, String startReason, SessionStatus status, AnalysisMode analysisMode, long intervalMs, long maxDurationMs, TriggerConfig triggerConfig, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
         this.vehicle = vehicle;
         this.startReason = startReason;
         this.status = status;
@@ -34,6 +35,11 @@ public class SessionDTO{
     }
 
     public SessionDTO() {}
+
+    public Long getSessionId() {
+        return sessionId;
+    }
+    public void setSessionId(Long sessionId) { this.sessionId = sessionId; }
 
     public String getVehicle() {
         return vehicle;
