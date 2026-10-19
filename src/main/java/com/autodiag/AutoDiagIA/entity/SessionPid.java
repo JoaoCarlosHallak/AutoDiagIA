@@ -1,12 +1,9 @@
 package com.autodiag.AutoDiagIA.entity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+
 
 @Entity
 @Table(name = "session_pids")
-@Getter
-@Setter
 public class SessionPid {
 
     @Id
@@ -18,4 +15,37 @@ public class SessionPid {
     private Session session;
 
     private String pid;
+
+    public SessionPid() {
+    }
+
+    public SessionPid(Session session, String pid) {
+        this.session = session;
+        this.pid = pid;
+    }
+
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Session getSession() {
+        return session;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
+    }
+
+    public String getPid() {
+        return pid;
+    }
+
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
 }

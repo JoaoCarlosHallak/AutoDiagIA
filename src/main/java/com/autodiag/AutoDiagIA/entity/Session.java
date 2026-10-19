@@ -2,10 +2,10 @@ package com.autodiag.AutoDiagIA.entity;
 
 import java.time.Instant;
 
-import com.autodiag.session.AnalysisMode;
-import com.autodiag.session.SessionEndReason;
-import com.autodiag.session.SessionStatus;
-import com.autodiag.session.TriggerOperator;
+import com.autodiag.AutoDiagIA.session.AnalysisMode;
+import com.autodiag.AutoDiagIA.session.SessionEndReason;
+import com.autodiag.AutoDiagIA.session.SessionStatus;
+import com.autodiag.AutoDiagIA.session.TriggerOperator;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

@@ -10,9 +10,9 @@ import com.autodiag.AutoDiagIA.dto.CreateSessionRequest;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.entity.SessionPid;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
-import com.autodiag.session.SessionStatus;
-import com.repository.SessionPidRepository;
-import com.repository.SessionRepository;
+import com.autodiag.AutoDiagIA.session.SessionStatus;
+import com.autodiag.AutoDiagIA.repository.SessionPidRepository;
+import com.autodiag.AutoDiagIA.repository.SessionRepository;
 
 import jakarta.transaction.Transactional;
 
