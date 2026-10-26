@@ -19,7 +19,7 @@ public class IaController {
     }
 
     @GetMapping
-    public String gerarResposta(@RequestParam(defaultValue = "Olá, quem é você?") String message) {
+    public String sendPrompt(@RequestParam(defaultValue = "Olá, quem é você?") String message) {
         try {
             GenerateContentResponse response = aiClient.models.generateContent(
                 "gemini-3.8-flash",
