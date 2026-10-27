@@ -2,7 +2,6 @@ package com.autodiag.AutoDiagIA.entity;
 
 import java.time.Instant;
 
-import com.autodiag.AutoDiagIA.session.AnalysisMode;
 import com.autodiag.AutoDiagIA.session.SessionEndReason;
 import com.autodiag.AutoDiagIA.session.SessionStatus;
 import com.autodiag.AutoDiagIA.session.TriggerOperator;
@@ -31,9 +30,6 @@ public class Session {
     @Enumerated(EnumType.STRING)
     private SessionStatus status;
 
-    @Enumerated(EnumType.STRING)
-    private AnalysisMode analysisMode;
-
     private long intervalMs;
 
     private long maxDurationMs;
@@ -59,12 +55,11 @@ public class Session {
 
 
 
-    public Session(Long id, String vehicle, String startReason, SessionStatus status, AnalysisMode analysisMode, long intervalMs, long maxDurationMs, String triggerPid, TriggerOperator triggerOperator, Double triggerValue, Integer triggerValueIndex, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
+    public Session(Long id, String vehicle, String startReason, SessionStatus status, long intervalMs, long maxDurationMs, String triggerPid, TriggerOperator triggerOperator, Double triggerValue, Integer triggerValueIndex, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
         this.id = id;
         this.vehicle = vehicle;
         this.startReason = startReason;
         this.status = status;
-        this.analysisMode = analysisMode;
         this.intervalMs = intervalMs;
         this.maxDurationMs = maxDurationMs;
         this.triggerPid = triggerPid;
@@ -120,13 +115,6 @@ public class Session {
         this.status = status;
     }
 
-    public AnalysisMode getAnalysisMode() {
-        return this.analysisMode;
-    }
-
-    public void setAnalysisMode(AnalysisMode analysisMode) {
-        this.analysisMode = analysisMode;
-    }
 
     public long getIntervalMs() {
         return this.intervalMs;

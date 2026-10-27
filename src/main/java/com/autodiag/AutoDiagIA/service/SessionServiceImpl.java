@@ -28,15 +28,17 @@ public class SessionServiceImpl implements SessionService {
     private final SessionPidRepository sessionPidRepository;
     private final ModelMapper modelMapper;
     private final SessionExecutionService sessionExecutionService;
+    private final AIService  aiService;
+
 
 
     @Autowired 
-    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService) {
+    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService, AIService aiService) {
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
         this.modelMapper = modelMapper;
         this.sessionExecutionService = sessionExecutionService;
-
+        this.aiService = aiService;
     }
 
     @Override
@@ -62,7 +64,6 @@ public class SessionServiceImpl implements SessionService {
         session.setVehicle(request.vehicle());
         session.setStartReason(request.startReason());
         session.setStatus(SessionStatus.CREATED);
-        session.setAnalysisMode(request.analysisMode());
         session.setIntervalMs(request.intervalMs());
         session.setMaxDurationMs(request.maxDurationMs());
         session.setCreatedAt(Instant.now());
@@ -163,5 +164,7 @@ public class SessionServiceImpl implements SessionService {
                 SessionDTO.class);
 
     }
+
+
 }
 

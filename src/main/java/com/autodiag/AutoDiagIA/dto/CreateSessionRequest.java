@@ -2,7 +2,7 @@ package com.autodiag.AutoDiagIA.dto;
 
 import java.util.List;
 
-import com.autodiag.AutoDiagIA.session.AnalysisMode;
+
 import com.autodiag.AutoDiagIA.session.TriggerConfig;
 
 public record CreateSessionRequest(
@@ -11,6 +11,5 @@ public record CreateSessionRequest(
         long intervalMs,
         String startReason,
         long maxDurationMs,
-        TriggerConfig trigger,
-        AnalysisMode analysisMode
+        TriggerConfig trigger
 ) {}

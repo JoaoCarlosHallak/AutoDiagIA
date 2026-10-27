@@ -20,4 +20,6 @@ public interface SessionLogService {
             Instant fromTime,
             Instant toTime,
             Pageable pageable);
+
+    String analyse(Long sessionId);
 }

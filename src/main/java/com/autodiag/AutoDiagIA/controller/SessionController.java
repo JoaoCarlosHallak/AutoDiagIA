@@ -3,6 +3,7 @@ package com.autodiag.AutoDiagIA.controller;
 import com.autodiag.AutoDiagIA.dto.CreateSessionRequest;
 import com.autodiag.AutoDiagIA.dto.LogDTO;
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.service.AIService;
 import com.autodiag.AutoDiagIA.service.SessionLogService;
 import com.autodiag.AutoDiagIA.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final SessionLogService sessionLogService;
+
 
 
     @Autowired
@@ -87,6 +89,18 @@ public class SessionController {
 
 
     }
+
+
+
+    @GetMapping("/analyse/{sessionId}")
+    public ResponseEntity<String> analyseSession(@PathVariable Long sessionId) {
+        return  new ResponseEntity<>(sessionLogService.analyse(sessionId), HttpStatus.OK);
+
+    }
+
+
+
+
 
 
 

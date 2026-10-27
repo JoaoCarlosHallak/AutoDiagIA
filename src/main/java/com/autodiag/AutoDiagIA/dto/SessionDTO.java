@@ -10,7 +10,6 @@ public class SessionDTO{
     private String vehicle;
     private String startReason;
     private SessionStatus status;
-    private AnalysisMode analysisMode;
     private long intervalMs;
     private long maxDurationMs;
     private TriggerConfig triggerConfig;
@@ -20,11 +19,10 @@ public class SessionDTO{
     private SessionEndReason endReason;
 
 
-    public SessionDTO(Long sessionId, String vehicle, String startReason, SessionStatus status, AnalysisMode analysisMode, long intervalMs, long maxDurationMs, TriggerConfig triggerConfig, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
+    public SessionDTO(Long sessionId, String vehicle, String startReason, SessionStatus status, long intervalMs, long maxDurationMs, TriggerConfig triggerConfig, Instant createdAt, Instant startedAt, Instant finishedAt, SessionEndReason endReason) {
         this.vehicle = vehicle;
         this.startReason = startReason;
         this.status = status;
-        this.analysisMode = analysisMode;
         this.intervalMs = intervalMs;
         this.maxDurationMs = maxDurationMs;
         this.triggerConfig = triggerConfig;
@@ -63,14 +61,6 @@ public class SessionDTO{
 
     public void setStatus(SessionStatus status) {
         this.status = status;
-    }
-
-    public AnalysisMode getAnalysisMode() {
-        return analysisMode;
-    }
-
-    public void setAnalysisMode(AnalysisMode analysisMode) {
-        this.analysisMode = analysisMode;
     }
 
     public long getIntervalMs() {

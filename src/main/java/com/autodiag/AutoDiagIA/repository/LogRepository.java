@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 
 @Repository
 public interface  LogRepository extends JpaRepository<Log, Long> {
@@ -31,6 +32,8 @@ public interface  LogRepository extends JpaRepository<Log, Long> {
             Instant toTime,
             Pageable pageable
     );
+
+    List<Log> findBySession_IdOrderByTimestampAsc(Long sessionId);
 }
 
 

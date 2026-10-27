@@ -1,14 +1,17 @@
 package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
+import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
 import com.autodiag.AutoDiagIA.repository.LogRepository;
 
 import com.autodiag.AutoDiagIA.repository.SessionRepository;
+import com.autodiag.AutoDiagIA.session.SessionStatus;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -24,12 +28,16 @@ public class SessionLogServiceImpl implements SessionLogService {
     private final LogRepository logRepository;
     private final SessionRepository sessionRepository;
     private final ModelMapper modelMapper;
+    private final AIService  aiService;
 
 
-    public SessionLogServiceImpl(LogRepository logRepository, SessionRepository sessionRepository, ModelMapper modelMapper) {
+
+    @Autowired
+    public SessionLogServiceImpl(LogRepository logRepository, SessionRepository sessionRepository, ModelMapper modelMapper, AIService aiService) {
         this.logRepository = logRepository;
         this.sessionRepository = sessionRepository;
         this.modelMapper = modelMapper;
+        this.aiService = aiService;
     }
 
     @Transactional
@@ -98,4 +106,35 @@ public class SessionLogServiceImpl implements SessionLogService {
 
         return logs.map(log -> modelMapper.map(log, LogDTO.class));
     }
-}
+
+
+    @Override
+    public String analyse(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Sessão de id: " + sessionId + " inexistente"
+                        ));
+
+        if (session.getStatus() != SessionStatus.FINISHED) {
+            throw new IllegalStateException(
+                    "Não é possível analisar uma sessão no estado "
+                            + session.getStatus()
+            );
+        }
+        List<LogDTO> sessionData =
+                logRepository.findBySession_IdOrderByTimestampAsc(sessionId)
+                        .stream()
+                        .map(log -> modelMapper.map(log, LogDTO.class))
+                        .toList();
+
+        if (sessionData.isEmpty()) {
+            throw new IllegalStateException(
+                    "Não existem registros de telemetria para analisar."
+            );
+        }
+
+
+        return aiService.analyseSession(modelMapper.map(session, SessionDTO.class), sessionData);
+    }
+    }
