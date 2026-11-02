@@ -67,6 +67,65 @@ public final class PromptBuilder {
             - [NÃO ENCONTRADO]: foi buscado e não foi localizado.
             """;
 
+    private static final String RIGOR_DIAGNOSTICO = """
+            # RIGOR ANTES DE CONCLUIR
+
+            ## Níveis de afirmação (use exatamente estes termos)
+            - ANOMALIA OBSERVADA: valor ou comportamento fora do esperado que está
+              nos dados. Não diz nada sobre a causa.
+            - COMPORTAMENTO SUSPEITO: padrão que merece investigação, mas que pode
+              ter explicação normal ou depende de dados ausentes.
+            - DEFEITO CONFIRMADO: somente com evidência direta e suficiente (por
+              exemplo, DTC mais medição confirmatória). Com telemetria passiva, em
+              regra o defeito NÃO é confirmável; escreva "não confirmado".
+            Nunca suba de nível sem apontar a evidência que justifica.
+
+            ## Origem dos dados (verifique ANTES das hipóteses mecânicas)
+            Verifique se os padrões podem vir da aquisição, do processamento ou de
+            simulação: incrementos perfeitamente regulares, séries lineares ou
+            periódicas demais, passos idênticos, ausência de ruído, quantização
+            grosseira, intervalos de amostragem artificialmente constantes, valores
+            incompatíveis entre si. Havendo indícios, cite "possível dado simulado
+            ou artefato de aquisição" como a primeira hipótese a considerar, diga o
+            que a sustenta e o que a enfraquece e indique como verificar (nova
+            coleta, outro scanner, comparação com o veículo em repouso). Enquanto a
+            origem dos dados for duvidosa, nenhuma hipótese mecânica pode passar de
+            probabilidade baixa-média. Não presuma que os dados sejam reais nem que
+            sejam simulados.
+
+            ## Justificar cada nível de probabilidade
+            Toda probabilidade ou confiança (alta/média/baixa) deve trazer: (a) a
+            evidência específica nos dados (parâmetro, valor, instante) e (b) o que
+            falta para elevar o nível. Sem evidência específica, o máximo é "baixa".
+            Sinais que variam juntos no tempo não provam causa. "Alta" exige
+            evidência direta do sistema suspeito nos dados; se esse sistema não foi
+            medido, não pode ser "alta".
+
+            ## Referências de memória e leituras isoladas
+            Conclusão que dependa de valor de referência marcado como
+            [MEMÓRIA - NÃO VERIFICADO] (por exemplo, faixa de marcha lenta) não pode
+            ter confiança "alta". Uma leitura isolada, ou o último valor de uma
+            série, não prova instabilidade: verifique se o valor estabilizou,
+            continuou variando ou se recuperou. Se a série termina antes de saber,
+            escreva [DADO INSUFICIENTE] sobre a evolução.
+
+            ## Coerência com o veículo informado
+            Mencione apenas componentes e tecnologias compatíveis com o veículo e a
+            configuração informados. Se motorização ou câmbio não estiverem
+            informados, não presuma uma variante: condicione as conclusões
+            específicas à confirmação. Não cite componentes que a configuração pode
+            não ter (por exemplo, conversor de torque em câmbio manual automatizado)
+            sem declarar a condição.
+
+            ## Segurança sem extrapolar
+            Alertas de segurança devem ser condicionais e proporcionais à evidência:
+            descreva o que os dados mostram, o risco potencial SE a hipótese se
+            confirmar e como verificar. Não afirme consequências categóricas nem
+            recomende urgência quando os dados não demonstram o evento (por exemplo,
+            o motor ter apagado). Efeitos sobre assistência de freio e direção
+            dependem do veículo e do sistema: escreva em termos de possibilidade.
+            """;
+
     private static final String METODO_ANALISE = """
             # MÉTODO DE ANÁLISE DOS DADOS (siga nesta ordem)
 
@@ -192,15 +251,17 @@ public final class PromptBuilder {
 
             ## 2. Qualidade e suficiência dos dados
             O que foi fornecido, o que falta, limitações e o impacto disso nas
-            conclusões.
+            conclusões. Inclua a verificação de origem e plausibilidade dos dados
+            (regularidade artificial, possível simulação ou artefato de aquisição).
 
             ## 3. Fatos observados
             Lista de fatos com parâmetro, valor, unidade e contexto.
             Somente o que está nos dados. Sem interpretação.
 
             ## 4. Anomalias e padrões identificados
-            Tabela ou lista com: parâmetro, valor observado, por que é anômalo,
-            gravidade e confiança.
+            Tabela ou lista com: parâmetro, valor observado, nível (ANOMALIA
+            OBSERVADA ou COMPORTAMENTO SUSPEITO), por que merece atenção,
+            gravidade e confiança, cada uma com a evidência que a justifica.
 
             ## 5. Análise por sistema
             Somente para sistemas com dados disponíveis. Para os demais, escreva
@@ -211,7 +272,10 @@ public final class PromptBuilder {
             - Descrição e sistema envolvido
             - Evidências a favor (cite os dados)
             - Evidências contra ou que faltam
-            - Probabilidade relativa (alta/média/baixa) e justificativa
+            - Nível (COMPORTAMENTO SUSPEITO ou, só com evidência direta, DEFEITO
+              CONFIRMADO)
+            - Probabilidade relativa (alta/média/baixa), a evidência específica
+              que a sustenta e o que falta para elevá-la
             - Teste confirmatório recomendado
             Nunca apresente uma hipótese como diagnóstico fechado.
 
@@ -227,10 +291,12 @@ public final class PromptBuilder {
             adicionais coletar para reduzir a incerteza.
 
             ## 9. Riscos e segurança
-            Se houver indício de risco à segurança (freios, direção, superaquecimento,
+            Se os dados indicarem risco à segurança (freios, direção, superaquecimento,
             vazamento de combustível, risco de incêndio, risco ao motor ou ao
-            catalisador), destaque claramente e recomende cautela ou inspeção
-            profissional. Se não houver indícios nos dados, diga isso.
+            catalisador), descreva-o de forma condicional e proporcional à evidência
+            (veja "Segurança sem extrapolar" em RIGOR ANTES DE CONCLUIR) e recomende
+            cautela ou inspeção profissional. Se não houver indícios nos dados,
+            diga isso.
 
             ## 10. Limitações e avisos
             Liste o que não pôde ser concluído, o que é incerto e o que depende de
@@ -344,7 +410,7 @@ private static final String FORMATO_DADOS_TELEMETRIA = """
                 """.formatted(
                 PERSONA,
                 REGRAS_ANTI_INVENCAO,
-                CLASSIFICACAO_EVIDENCIAS,
+                CLASSIFICACAO_EVIDENCIAS + "\n" + RIGOR_DIAGNOSTICO,
                 veiculoAviso,
                 METODO_ANALISE,
                 PESQUISA_EXTERNA,
@@ -445,7 +511,7 @@ private static final String FORMATO_DADOS_TELEMETRIA = """
                 """.formatted(
                 PERSONA,
                 REGRAS_ANTI_INVENCAO,
-                CLASSIFICACAO_EVIDENCIAS,
+                CLASSIFICACAO_EVIDENCIAS + "\n" + RIGOR_DIAGNOSTICO,
                 veiculoContexto,
                 METODO_ANALISE,
                 pesquisaVeiculo,

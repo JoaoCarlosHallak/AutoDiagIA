@@ -100,7 +100,7 @@ public enum ObdPid {
             case "load", "engine_load" -> CALCULATED_LOAD;
             case "map", "intake_pressure" -> INTAKE_MANIFOLD_PRESSURE;
             case "maf", "air_flow" -> MAF_AIR_FLOW;
-            case "throttle", "acelerador" -> THROTTLE_POSITION;
+            case "throttle", "acelerador", "tps" -> THROTTLE_POSITION;
             case "fuel_level", "nivel_combustivel" -> FUEL_LEVEL;
             case "battery_voltage", "voltage" -> CONTROL_MODULE_VOLTAGE;
             case "ambient_temperature" -> AMBIENT_AIR_TEMP;
