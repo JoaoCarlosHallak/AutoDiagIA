@@ -1,5 +1,6 @@
 package com.autodiag.AutoDiagIA.service;
 
+import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
@@ -9,8 +10,8 @@ import java.time.Instant;
 import java.util.List;
 
 public interface SessionExecutionService {
-    void start(Long sessionId);
-    void finish(Long sessionId, SessionEndReason reason);
+    void start(SessionDTO sessionDTO);
+    void finish(SessionDTO sessionDTO, SessionEndReason reason);
     void shutdown();
     void cancelTask(Long sessionId);
 

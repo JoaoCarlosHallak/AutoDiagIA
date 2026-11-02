@@ -1,5 +1,6 @@
 package com.autodiag.AutoDiagIA.service;
 
+import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.entity.SessionPid;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
@@ -15,6 +16,7 @@ import com.autodiag.AutoDiagIA.telemetry.TelemetryCollector;
 
 import jakarta.annotation.PreDestroy;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
     private final SessionPidRepository sessionPidRepository;
     private final TelemetryCollector telemetryCollector;
     private final SessionLogService sessionLogService;
+    private final ModelMapper modelMapper;
 
     private final ScheduledExecutorService executor =
             Executors.newScheduledThreadPool(1);
@@ -46,103 +49,60 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
             SessionRepository sessionRepository,
             SessionPidRepository sessionPidRepository,
             TelemetryCollector telemetryCollector,
-            SessionLogService sessionLogService) {
+            SessionLogService sessionLogService, ModelMapper modelMapper) {
 
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
         this.telemetryCollector = telemetryCollector;
         this.sessionLogService = sessionLogService;
+        this.modelMapper = modelMapper;
     }
 
-    public synchronized void start(Long sessionId) {
-        if (tasks.containsKey(sessionId)) {
+    public synchronized void start(SessionDTO session) {
+        if (tasks.containsKey(session.getSessionId())) {
             throw new IllegalStateException(
                     "A sessão já possui uma tarefa de coleta."
             );
         }
 
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Sessão inexistente: " + sessionId
-                ));
-
-        if (session.getStatus() != SessionStatus.RUNNING) {
-            throw new IllegalStateException(
-                    "A sessão precisa estar RUNNING para iniciar a coleta."
-            );
-        }
-
-        if (session.getIntervalMs() <= 0
-                || session.getMaxDurationMs() <= 0) {
-            throw new IllegalStateException(
-                    "Intervalo e duração máxima devem ser positivos."
-            );
-        }
-
         List<ObdPid> pids = sessionPidRepository
-                .findBySession_Id(sessionId)
+                .findBySession_Id(session.getSessionId())
                 .stream()
                 .map(SessionPid::getPid)
                 .map(ObdPid::fromString)
                 .toList();
 
-        if (pids.isEmpty()) {
-            throw new IllegalStateException(
-                    "A sessão não possui PIDs configurados."
-            );
-        }
 
         ScheduledFuture<?> task = executor.scheduleWithFixedDelay(
-                () -> executeCycle(sessionId, pids),
+                () -> executeCycle(session, pids),
                 0,
                 session.getIntervalMs(),
                 TimeUnit.MILLISECONDS
         );
 
-        tasks.put(sessionId, task);
+        tasks.put(session.getSessionId(), task);
     }
 
-    private void executeCycle(Long sessionId, List<ObdPid> pids) {
+    private void executeCycle(SessionDTO sessionDTO, List<ObdPid> pids) {
+        Long sessionId = sessionDTO.getSessionId();
         try {
-            Session session = sessionRepository.findById(sessionId)
-                    .orElse(null);
-
-            if (session == null
-                    || session.getStatus() != SessionStatus.RUNNING) {
-                cancelTask(sessionId);
-                return;
-            }
 
             Instant now = Instant.now();
 
-            if (elapsedMs(session.getStartedAt(), now)
-                    >= session.getMaxDurationMs()) {
-                finish(sessionId, SessionEndReason.MAX_DURATION_REACHED);
+            if (elapsedMs(sessionDTO.getStartedAt(), now)
+                    >= sessionDTO.getMaxDurationMs()) {
+                finish(sessionDTO, SessionEndReason.MAX_DURATION_REACHED);
                 return;
             }
 
             List<ObdReading> readings = telemetryCollector.collect(pids);
 
 
-            session = sessionRepository.findById(sessionId).orElse(null);
-
-            if (session == null
-                    || session.getStatus() != SessionStatus.RUNNING) {
-                cancelTask(sessionId);
-                return;
-            }
-
-
-            if (elapsedMs(session.getStartedAt(), Instant.now())
-                    >= session.getMaxDurationMs()) {
-                finish(sessionId, SessionEndReason.MAX_DURATION_REACHED);
-                return;
-            }
-
+            Session session = modelMapper.map(sessionDTO, Session.class);
             sessionLogService.saveReadings(session, readings);
 
             if (triggerReached(session, readings)) {
-                finish(sessionId, SessionEndReason.TRIGGER_REACHED);
+                finish(sessionDTO, SessionEndReason.TRIGGER_REACHED);
             }
 
         } catch (IOException | RuntimeException e) {
@@ -151,41 +111,14 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
                             + ": " + e.getMessage()
             );
 
-            finish(sessionId, SessionEndReason.ERROR);
+            finish(sessionDTO, SessionEndReason.ERROR);
         }
     }
 
     private boolean triggerReached(Session session, List<ObdReading> readings) {
-
-        if (session.getTriggerPid() == null
-                || session.getTriggerOperator() == null
-                || session.getTriggerValue() == null) {
-            return false;
-        }
-
-        ObdPid triggerPid;
-
-        try {
-            triggerPid = ObdPid.fromString(session.getTriggerPid());
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-
         for (ObdReading reading : readings) {
-            ObdPid readingPid;
 
-            try {
-                readingPid = ObdPid.fromString(reading.pid());
-            } catch (IllegalArgumentException e) {
-                continue;
-            }
-
-            if (readingPid != triggerPid) {
-                continue;
-            }
-
-            int index = session.getTriggerValueIndex() == null
-                    ? 0 : session.getTriggerValueIndex();
+            int index = session.getTriggerValueIndex();
 
             if (index < 0 || index >= reading.values().size()) {
                 return false;
@@ -213,26 +146,21 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
     }
 
     @Transactional
-    public void finish(Long sessionId, SessionEndReason reason) {
-        Session session = sessionRepository.findById(sessionId)
+    public void finish(SessionDTO sessionDTO, SessionEndReason reason) {
+        Session session = sessionRepository.findById(sessionDTO.getSessionId())
                 .orElse(null);
 
-        if (session != null
-                && session.getStatus() == SessionStatus.RUNNING) {
+        session.setFinishedAt(Instant.now());
+        session.setEndReason(reason);
 
-            session.setFinishedAt(Instant.now());
-            session.setEndReason(reason);
-
-            session.setStatus(
-                    reason == SessionEndReason.ERROR
-                            ? SessionStatus.FAILED
-                            : SessionStatus.FINISHED
+        session.setStatus(
+                reason == SessionEndReason.ERROR
+                        ? SessionStatus.FAILED
+                        : SessionStatus.FINISHED
             );
 
             sessionRepository.save(session);
-        }
-
-        cancelTask(sessionId);
+            cancelTask(session.getId());
     }
 
     private long elapsedMs(Instant start, Instant now) {

@@ -1,7 +1,6 @@
 package com.autodiag.AutoDiagIA.dto;
 
 import com.autodiag.AutoDiagIA.session.*;
-import jakarta.persistence.*;
 
 import java.time.Instant;
 

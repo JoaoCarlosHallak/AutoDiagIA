@@ -28,17 +28,14 @@ public class SessionServiceImpl implements SessionService {
     private final SessionPidRepository sessionPidRepository;
     private final ModelMapper modelMapper;
     private final SessionExecutionService sessionExecutionService;
-    private final AIService  aiService;
 
 
-
-    @Autowired 
-    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService, AIService aiService) {
+    @Autowired
+    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService) {
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
         this.modelMapper = modelMapper;
         this.sessionExecutionService = sessionExecutionService;
-        this.aiService = aiService;
     }
 
     @Override
@@ -111,19 +108,19 @@ public class SessionServiceImpl implements SessionService {
         session.setStartedAt(Instant.now());
         session.setStatus(SessionStatus.RUNNING);
 
-        sessionRepository.save(session);
+        SessionDTO sessionDTO = modelMapper.map(sessionRepository.save(session), SessionDTO.class);
 
         try {
-            sessionExecutionService.start(session.getId());
+            sessionExecutionService.start(sessionDTO);
         } catch (RuntimeException e) {
             sessionExecutionService.finish(
-                    session.getId(),
+                    sessionDTO,
                     SessionEndReason.ERROR
             );
             throw e;
         }
 
-        return modelMapper.map(session, SessionDTO.class);
+        return sessionDTO;
     }
 
 
@@ -143,7 +140,7 @@ public class SessionServiceImpl implements SessionService {
         }
 
         sessionExecutionService.finish(
-                id,
+                modelMapper.map(session, SessionDTO.class),
                 SessionEndReason.USER_STOPPED
         );
 
