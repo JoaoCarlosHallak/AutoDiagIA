@@ -48,8 +48,6 @@ public class AIServiceImpl implements AIService {
         long aiStart = System.nanoTime();
 
         try {
-            System.out.println("[AI] Iniciando chamada ao Gemini...");
-            System.out.println("[AI] Modelo: gemini-3.8-flash");
 
             GenerateContentResponse response =
                     aiClient.models.generateContent(
@@ -68,11 +66,8 @@ public class AIServiceImpl implements AIService {
             return response.text();
 
         } catch (Exception e) {
-            System.err.println("[AI] ERRO NA CHAMADA AO GEMINI:");
-            e.printStackTrace();
-
             throw new RuntimeException(
-                    "Erro ao realizar análise com Gemini: " + e.getMessage(), e
+                    "Error in the call to AI " + e.getMessage(), e
             );
 
         } finally {
