@@ -125,7 +125,6 @@ public final class PromptBuilder {
             o motor ter apagado). Efeitos sobre assistência de freio e direção
             dependem do veículo e do sistema: escreva em termos de possibilidade.
             """;
-
     private static final String METODO_ANALISE = """
             # MÉTODO DE ANÁLISE DOS DADOS (siga nesta ordem)
 
