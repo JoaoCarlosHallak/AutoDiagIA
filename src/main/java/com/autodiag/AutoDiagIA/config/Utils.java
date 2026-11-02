@@ -4,6 +4,7 @@ import com.autodiag.AutoDiagIA.dto.LogDTO;
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
+import com.google.genai.Client;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +13,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class Utils {
 
-@Bean
+
+
+    @Bean
+    public Client aiClient() {
+        return Client.builder()
+                .apiKey(System.getenv("GEMINI_API_KEY"))
+                .build();
+    }
+
+
+    @Bean
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
 
