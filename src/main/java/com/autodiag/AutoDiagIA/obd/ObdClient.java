@@ -2,9 +2,8 @@ package com.autodiag.AutoDiagIA.obd;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
-
 import java.io.IOException;
-import java.time.Instant;
+
 
 import org.springframework.stereotype.Component;
 
@@ -20,15 +19,15 @@ public class ObdClient {
     }
 
     public ObdReading read(ObdPid pid) throws IOException {
-        System.out.println(elm327Client.sendCommand("atsp0"));
+        //System.out.println(elm327Client.sendCommand("atsp0"));
 
         ObdCommand command =
                 new ObdCommand(pid);
 
-        String response =
-                elm327Client.sendCommand(command.toCommand());
+        String response = elm327Client.sendCommand(command.toCommand());
         System.out.println("Comando enviado: " + command.toCommand());
         System.out.println("Resposta recebida: [" + response + "]");
+        response = "410C0C1C";
 
         try {
             ObdReading reading =

@@ -18,7 +18,8 @@ public class ObdResponseParser {
                 throw new IllegalArgumentException("Resposta OBD vazia.");
             }
 
-            String[] bytes = response.trim().split("\\\s+");
+            //String[] bytes = response.trim().split("\\\s+");
+            String[] bytes = splitHexBytes(response);
 
             if (bytes.length >= 4
                         && bytes[0].equalsIgnoreCase("7F")
@@ -226,5 +227,27 @@ public class ObdResponseParser {
                 | ((long) d[1] << 16)
                 | ((long) d[2] << 8)
                 | d[3];
+    }
+
+
+    private static String[] splitHexBytes(String response) {
+
+        String normalized = response
+                .replaceAll("\\s+", "")
+                .toUpperCase();
+
+        if (normalized.isEmpty() || normalized.length() % 2 != 0) {
+            throw new IllegalArgumentException(
+                    "Resposta hexadecimal inválida: " + response
+            );
+        }
+
+        String[] bytes = new String[normalized.length() / 2];
+
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = normalized.substring(i * 2, i * 2 + 2);
+        }
+
+        return bytes;
     }
 }

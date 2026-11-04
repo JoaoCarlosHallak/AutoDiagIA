@@ -15,7 +15,7 @@ public class CommunicationConfig {
 
     @Bean(destroyMethod = "closePort")
     public SerialPort serialPort() throws IOException {
-        SerialPort port = SerialPort.getCommPort("COM3");
+        SerialPort port = SerialPort.getCommPort("COM4");
 
         SerialPortManager.openAndSetCommPort(
                 port,
