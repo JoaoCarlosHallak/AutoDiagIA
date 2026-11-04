@@ -20,9 +20,9 @@ public enum ObdPid {
     MAF_AIR_FLOW("10", "Fluxo de Ar MAF", 2, "g/s"),
     THROTTLE_POSITION("11", "Posição da Borboleta", 1, "%"),
     O2_SENSORS_PRESENT("13", "Sensores de O2 Presentes", 1, "máscara de bits"),
-    O2_SENSOR_1_B1("14", "Sensor de O2 1 Banco 1", 2, "misto"),
-    O2_SENSOR_2_B1("15", "Sensor de O2 2 Banco 1", 2, "misto"),
-    O2_SENSOR_2_B2("19", "Sensor de O2 2 Banco 2", 2, "misto"),
+    O2_SENSOR_1_B1("14", "Sensor de O2 Pré-Catalisador (Lado 1)", 2, "misto"),
+    O2_SENSOR_2_B1("15", "Sensor de O2 Pós-Catalisador (Lado 1)", 2, "misto"),
+    O2_SENSOR_2_B2("19", "Sensor de O2 Pós-Catalisador (Lado 2)", 2, "misto"),
     OBD_STANDARD("1C", "Padrão OBD", 1, "código"),
     ENGINE_RUN_TIME("1F", "Tempo de Funcionamento do Motor", 2, "s"),
     DISTANCE_WITH_MIL("21", "Distância com a MIL Acesa", 2, "km"),
@@ -35,8 +35,8 @@ public enum ObdPid {
     BAROMETRIC_PRESSURE("33", "Pressão Barométrica", 1, "kPa"),
     O2_SENSOR_1_WIDE_RANGE("34", "Sensor de O2 1 Banda Larga", 4, "misto"),
     O2_SENSOR_5_WIDE_RANGE("38", "Sensor de O2 5 Banda Larga", 4, "misto"),
-    CATALYST_TEMP_B1S1("3C", "Temperatura do Catalisador B1S1", 2, "°C"),
-    CATALYST_TEMP_B2S1("3D", "Temperatura do Catalisador B2S1", 2, "°C"),
+    CATALYST_TEMP_B1S1("3C", "Temp. do Catalisador (Lado 1)", 2, "°C"),
+    CATALYST_TEMP_B2S1("3D", "Temp. do Catalisador (Lado 2)(V)", 2, "°C"),
     MONITOR_STATUS_CYCLE("41", "Status do Monitor neste Ciclo de Condução", 4, "máscara de bits"),
     CONTROL_MODULE_VOLTAGE("42", "Tensão do Módulo de Controle", 2, "V"),
     ABSOLUTE_LOAD("43", "Carga Absoluta", 2, "%"),
@@ -95,13 +95,12 @@ public enum ObdPid {
         return switch (normalized.toLowerCase()) {
             case "rpm", "giro" -> ENGINE_RPM;
             case "speed", "velocidade" -> VEHICLE_SPEED;
-            case "coolant_temperature", "temperatura",
-                 "temperatura_motor" -> ENGINE_COOLANT_TEMPERATURE;
-            case "load", "engine_load" -> CALCULATED_LOAD;
+            case "coolant_temperature", "temperatura", "temperatura_motor" -> ENGINE_COOLANT_TEMPERATURE;
+            case "load", "engine_load", "carga_motor" -> CALCULATED_LOAD;
             case "map", "intake_pressure" -> INTAKE_MANIFOLD_PRESSURE;
             case "maf", "air_flow" -> MAF_AIR_FLOW;
-            case "throttle", "acelerador", "tps" -> THROTTLE_POSITION;
-            case "fuel_level", "nivel_combustivel" -> FUEL_LEVEL;
+            case "throttle", "acelerador", "tps", "borboleta" -> THROTTLE_POSITION;
+            case "fuel_level", "nivel_combustivel", "combustivel" -> FUEL_LEVEL;
             case "battery_voltage", "voltage" -> CONTROL_MODULE_VOLTAGE;
             case "ambient_temperature" -> AMBIENT_AIR_TEMP;
             default -> throw new IllegalArgumentException(
