@@ -27,7 +27,6 @@ public class ObdClient {
         String response = elm327Client.sendCommand(command.toCommand());
         System.out.println("Comando enviado: " + command.toCommand());
         System.out.println("Resposta recebida: [" + response + "]");
-        response = "410C0C1C";
 
         try {
             ObdReading reading =
