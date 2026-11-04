@@ -120,7 +120,7 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
 
             int index = session.getTriggerValueIndex();
 
-            if (index < 0 || index >= reading.values().size()) {
+            if (index >= reading.values().size()) {
                 return false;
             }
 
@@ -147,20 +147,21 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
 
     @Transactional
     public void finish(SessionDTO sessionDTO, SessionEndReason reason) {
-        Session session = sessionRepository.findById(sessionDTO.getSessionId())
-                .orElse(null);
+        /*Session session = sessionRepository.findById(sessionDTO.getSessionId())
+                .orElse(null);*/
 
-        session.setFinishedAt(Instant.now());
-        session.setEndReason(reason);
 
-        session.setStatus(
+        sessionDTO.setFinishedAt(Instant.now());
+        sessionDTO.setEndReason(reason);
+
+        sessionDTO.setStatus(
                 reason == SessionEndReason.ERROR
                         ? SessionStatus.FAILED
                         : SessionStatus.FINISHED
             );
 
-            sessionRepository.save(session);
-            cancelTask(session.getId());
+            sessionRepository.save(modelMapper.map(sessionDTO, Session.class));
+            cancelTask(sessionDTO.getSessionId());
     }
 
     private long elapsedMs(Instant start, Instant now) {

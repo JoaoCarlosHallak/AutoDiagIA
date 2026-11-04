@@ -65,7 +65,7 @@ public class SessionServiceImpl implements SessionService {
         session.setMaxDurationMs(request.maxDurationMs());
         session.setCreatedAt(Instant.now());
 
-        if (request.trigger() != null) {
+        if (request.trigger() != null && request.trigger().getValueIndex() >= 0) {
             session.setTriggerPid(
                     ObdPid.fromString(request.trigger().getPid()).getCode()
             );
