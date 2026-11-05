@@ -16,7 +16,7 @@ public class SerialPortManager {
         port.setParity(parity);
 
         if (!port.openPort()) {
-            System.out.println("Could not open port for COM4");
+            System.out.println("Could not open port for " + port.getDescriptivePortName());
         }
 
         System.out.println("Opened port for " + port + " with baud rate " + port.getBaudRate() + " and parity " + port.getParity());

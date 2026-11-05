@@ -18,7 +18,6 @@ public class ObdResponseParser {
                 throw new IllegalArgumentException("Resposta OBD vazia.");
             }
 
-            //String[] bytes = response.trim().split("\\\s+");
             String[] bytes = splitHexBytes(response);
 
             if (bytes.length >= 4

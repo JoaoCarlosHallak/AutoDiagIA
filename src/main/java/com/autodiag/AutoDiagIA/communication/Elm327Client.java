@@ -26,12 +26,20 @@ public class Elm327Client {
     }
 
     private void Elm327StartConfig() throws IOException{
+        System.out.println(this.sendCommand("ATZ") + " resetado: ");
         try {
-            String response = this.sendCommand("ATE0"); // sem echo
-            if (!response.contains("OK")) {
-                throw new IOException("Falha ao desativar o echo: " + response);
+            String echoResponse = this.sendCommand("ATE0");
+            String automaticProtocolResponse = this.sendCommand("ATSP0");
+
+            // sem echo
+            if (!echoResponse.contains("OK")){
+                throw new IOException("Falha ao desativar o echo: " + echoResponse);
             }
-            System.out.println("Echo desativado com sucesso");
+            if (!automaticProtocolResponse.contains("OK")){
+                throw new IOException("Falha ao desativar o automatico: " + automaticProtocolResponse);
+            }
+            System.out.println("Echo desativado com sucesso | Elm327 em modo automatico de protocolo");
+            System.out.println("Protocolo determinado: " + this.sendCommand("ATDP"));
         } catch (IOException e) {
             throw new Elm327CommunicationException("Erro ao configurar o ELM327: " + e.getMessage(), e);
         }
