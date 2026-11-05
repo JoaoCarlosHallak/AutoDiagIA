@@ -26,7 +26,7 @@ public class Elm327Client {
     }
 
     private void Elm327StartConfig() throws IOException{
-        System.out.println(this.sendCommand("ATZ") + " resetado: ");
+        System.out.println(this.sendCommand("ATZ") + " resetado");
         try {
             String echoResponse = this.sendCommand("ATE0");
             String automaticProtocolResponse = this.sendCommand("ATSP0");

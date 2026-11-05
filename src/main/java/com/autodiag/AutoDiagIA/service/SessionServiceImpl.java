@@ -91,6 +91,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    @Transactional
     public SessionDTO start(Long id) {
 
         Session session = sessionRepository.findById(id)
