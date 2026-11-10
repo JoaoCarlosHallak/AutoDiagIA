@@ -19,7 +19,6 @@ public class ObdClient {
     }
 
     public ObdReading read(ObdPid pid) throws IOException {
-        //System.out.println(elm327Client.sendCommand("atsp0"));
 
         ObdCommand command =
                 new ObdCommand(pid);

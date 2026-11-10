@@ -25,59 +25,59 @@ public class Elm327Client {
        Elm327StartConfig();
     }
 
-    private void Elm327StartConfig() throws IOException{
-        System.out.println(this.sendCommand("ATZ") + " resetado");
+    private void Elm327StartConfig() throws IOException {
         try {
-            String echoResponse = this.sendCommand("ATE0");
-            String automaticProtocolResponse = this.sendCommand("ATSP0");
+            String reset = sendCommand("ATZ", 5000);
+            System.out.println("Reset: " + reset.replace("\r", "\\r"));
 
-            // sem echo
-            if (!echoResponse.contains("OK")){
-                throw new IOException("Falha ao desativar o echo: " + echoResponse);
+            String echo = sendCommand("ATE0");
+            if (!echo.contains("OK")) {
+                throw new IOException("Falha ao desativar o echo: " + echo);
             }
-            if (!automaticProtocolResponse.contains("OK")){
-                throw new IOException("Falha ao desativar o automatico: " + automaticProtocolResponse);
+
+            String sp = sendCommand("ATSP0");
+            if (!sp.contains("OK")) {
+                throw new IOException("Falha ao ativar protocolo automático: " + sp);
             }
-            System.out.println("Echo desativado com sucesso | Elm327 em modo automatico de protocolo");
-            System.out.println("Protocolo determinado: " + this.sendCommand("ATDP"));
+
+            // força a busca de protocolo agora
+            String probe = sendCommand("0100", 15000);
+
+            System.out.println("Protocolo determinado: " + sendCommand("ATDP"));
         } catch (IOException e) {
             throw new Elm327CommunicationException("Erro ao configurar o ELM327: " + e.getMessage(), e);
         }
     }
 
+    public synchronized String sendCommand(String command) throws IOException {
+        return sendCommand(command, 3000);
+    }
 
-    public String sendCommand(String command) throws IOException {
-        try {
+    public synchronized String sendCommand(String command, long timeoutMs) throws IOException {
+        while (in.available() > 0) in.read();
 
         out.write((command + "\r").getBytes(StandardCharsets.US_ASCII));
         out.flush();
 
+        StringBuilder sb = new StringBuilder();
+        long deadline = System.currentTimeMillis() + timeoutMs;
 
-        StringBuilder builder = new StringBuilder();
-
-        long timeout = System.currentTimeMillis() + 3000;
-
-        while (System.currentTimeMillis() < timeout) {
-
+        while (System.currentTimeMillis() < deadline) {
             if (in.available() > 0) {
-
-                int data = in.read();
-
-                if (data == '>') {
-                    break;
+                int b = in.read();
+                if (b == -1) throw new IOException("Porta serial fechada");
+                if (b == '>') return sb.toString().trim();
+                sb.append((char) b);
+            } else {
+                try { Thread.sleep(5); }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Leitura interrompida", e);
                 }
-
-                builder.append((char) data);
             }
-
-
         }
-
-        return builder.toString().trim();
-    } catch (IOException e) {
-            throw new Elm327CommunicationException("Erro na comunicação com o ELM327: " + e.getMessage(), e);
+        throw new IOException("Timeout aguardando '>' para " + command + ". Parcial: " + sb);
     }
-}
 }
 
 

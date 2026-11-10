@@ -3,6 +3,7 @@ package com.autodiag.AutoDiagIA.obd;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -36,9 +37,7 @@ public class ObdResponseParser {
             if (bytes.length < 2
                     || !bytes[0].equalsIgnoreCase("41")
                     || !bytes[1].equalsIgnoreCase(pid.getCode())) {
-                throw new IllegalArgumentException(
-                        "Resposta incompatível com o PID "
-                                + pid.getCode() + ": " + response);
+                throw new IllegalArgumentException("Resposta incompatível com o PID " + pid.getCode() + ": " + response);
             }
 
             int expectedLength = 2 + pid.getDataBytes();
@@ -123,7 +122,7 @@ public class ObdResponseParser {
     private static ObdValue parseSingleValue(ObdPid pid, int[] d) {
         double value;
         String name = pid.getDescription();
-
+ 
         switch (pid) {
             case CALCULATED_LOAD,
                  THROTTLE_POSITION,

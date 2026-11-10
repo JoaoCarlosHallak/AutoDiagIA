@@ -35,8 +35,9 @@ public class TelemetryCollector {
                     "Falha ao consultar PID "
                     + pid.getCode() + ": " + e.getMessage());
             }
+            
         }
 
-        return readings;
+            return readings;
+        }
     }
-}
