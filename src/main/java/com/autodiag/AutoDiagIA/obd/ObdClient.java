@@ -18,13 +18,12 @@ public class ObdClient {
 
     }
 
-    public ObdReading read(ObdPid pid) throws IOException {
+    public ObdReading readPid(ObdPid pid) throws IOException {
 
-        ObdCommand command =
-                new ObdCommand(pid);
+        String command = ObdCommand.commandToMode01(pid);
 
-        String response = elm327Client.sendCommand(command.toCommand());
-        System.out.println("Comando enviado: " + command.toCommand());
+        String response = elm327Client.sendCommand(command);
+        System.out.println("Comando enviado: " + command);
         System.out.println("Resposta recebida: [" + response + "]");
 
         try {
@@ -34,6 +33,29 @@ public class ObdClient {
         } catch (IllegalArgumentException e) {
             throw new ObdResponseException("Falha ao ler o PID " + pid.getCode(), e);
         }
+    }
+
+
+
+    public DTCReading readDTC(String mode) throws IOException {
+
+        switch (mode) {
+            case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();
+            case "pendente" -> DTCMode.PENDENT_DTC.getCode();
+            case "permanente" -> DTCMode.PERMANENT_DTC.getCode();
+        }
+
+        String response = elm327Client.sendCommand(mode);
+        System.out.println("Comando enviado: " + mode);
+        System.out.println("Resposta recebida: [" + response + "]");
+        return null;
+
+
+        /*try{
+
+        }*/
+
+
     }
 
 

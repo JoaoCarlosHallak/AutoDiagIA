@@ -28,7 +28,7 @@ public class TelemetryCollector {
 
         for (ObdPid pid : pids) {
             try {
-                readings.add(obdClient.read(pid));
+                readings.add(obdClient.readPid(pid));
 
             } catch (ObdResponseException e) {
                 System.err.println(
