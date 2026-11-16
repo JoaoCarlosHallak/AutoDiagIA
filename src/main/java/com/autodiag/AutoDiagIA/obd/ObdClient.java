@@ -40,24 +40,26 @@ public class ObdClient {
     public DTCReading readDTC(String mode) throws IOException {
 
         switch (mode) {
-            case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();
-            case "pendente" -> DTCMode.PENDENT_DTC.getCode();
-            case "permanente" -> DTCMode.PERMANENT_DTC.getCode();
+            case "confirmado" -> mode = DTCMode.CONFIRMED_DTC.getCode();
+            case "pendente" -> mode = DTCMode.PENDENT_DTC.getCode();
+            case "permanente" -> mode = DTCMode.PERMANENT_DTC.getCode();
         }
 
         String response = elm327Client.sendCommand(mode);
         System.out.println("Comando enviado: " + mode);
         System.out.println("Resposta recebida: [" + response + "]");
-        return null;
 
-
-        /*try{
-
-        }*/
-
-
+        try {
+            return DTCResponseParser.parse(response, mode);
+        } catch (IllegalArgumentException e) {
+            throw new ObdResponseException("Falha ao ler DTC: " + mode);
+        }
     }
 
 
+
 }
+
+
+
 
