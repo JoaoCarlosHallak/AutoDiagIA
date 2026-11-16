@@ -3,6 +3,7 @@ package com.autodiag.AutoDiagIA.obd;
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 import java.io.IOException;
+import java.util.Locale;
 
 
 import org.springframework.stereotype.Component;
@@ -26,9 +27,10 @@ public class ObdClient {
         System.out.println("Comando enviado: " + command);
         System.out.println("Resposta recebida: [" + response + "]");
 
+
         try {
             ObdReading reading =
-                ObdResponseParser.parse(response, pid);
+                    ObdResponseParser.parse(response, pid);
             return reading;
         } catch (IllegalArgumentException e) {
             throw new ObdResponseException("Falha ao ler o PID " + pid.getCode(), e);
@@ -36,29 +38,33 @@ public class ObdClient {
     }
 
 
-
     public DTCReading readDTC(String mode) throws IOException {
 
-        switch (mode) {
-            case "confirmado" -> mode = DTCMode.CONFIRMED_DTC.getCode();
-            case "pendente" -> mode = DTCMode.PENDENT_DTC.getCode();
-            case "permanente" -> mode = DTCMode.PERMANENT_DTC.getCode();
-        }
+        String command = switch (mode.toLowerCase(Locale.ROOT)) {
+            case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();
+            case "pendente" -> DTCMode.PENDENT_DTC.getCode();
+            case "permanente" -> DTCMode.PERMANENT_DTC.getCode();
 
-        String response = elm327Client.sendCommand(mode);
-        System.out.println("Comando enviado: " + mode);
+            default -> throw new IllegalArgumentException(
+                    "Tipo de DTC inválido: " + mode
+            );
+        };
+
+        String response = elm327Client.sendCommand(command);
+
+        System.out.println("Comando enviado: " + command);
         System.out.println("Resposta recebida: [" + response + "]");
 
         try {
-            return DTCResponseParser.parse(response, mode);
+            return DTCResponseParser.parse(response, command);
         } catch (IllegalArgumentException e) {
-            throw new ObdResponseException("Falha ao ler DTC: " + mode);
+            throw new ObdResponseException(
+                    "Falha ao ler DTC no modo " + command, e
+            );
         }
     }
-
-
-
 }
+
 
 
 

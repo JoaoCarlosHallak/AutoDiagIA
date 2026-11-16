@@ -26,7 +26,7 @@ public class DTCServiceImpl implements DTCService {
     public DTCReading getDTCbyMode(String mode) throws IOException {
         mode = mode.toLowerCase();
 
-        if (!(List.of("confimado", "pendente", "permanente").contains(mode))) {
+        if (!(List.of("confirmado", "pendente", "permanente").contains(mode))) {
             throw new IllegalArgumentException("Invalid mode");
         }
         return obdClient.readDTC(mode);

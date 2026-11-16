@@ -1,6 +1,5 @@
+
 package com.autodiag.AutoDiagIA.obd;
-
-
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -9,7 +8,10 @@ import java.util.Locale;
 
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 
-public abstract class DTCResponseParser {
+public final class DTCResponseParser {
+
+    private DTCResponseParser() {
+    }
 
     public static DTCReading parse(String response, String mode) {
 
@@ -21,39 +23,74 @@ public abstract class DTCResponseParser {
                 .replaceAll("\\s+", "")
                 .toUpperCase(Locale.ROOT);
 
-        if (normalized.length() % 2 != 0) {
-            throw new ObdResponseException("Resposta hexadecimal inválida.");
+        if (!normalized.matches("[0-9A-F]+")) {
+            throw new ObdResponseException(
+                    "Resposta contém caracteres que não são hexadecimais."
+            );
         }
 
-        String expectedHeader = switch (mode.toUpperCase(Locale.ROOT)) {
+        if (normalized.length() % 2 != 0) {
+            throw new ObdResponseException(
+                    "Resposta hexadecimal com quantidade ímpar de caracteres."
+            );
+        }
+
+        String normalizedMode = mode.toUpperCase(Locale.ROOT);
+
+        String expectedHeader = switch (normalizedMode) {
             case "03" -> "43";
             case "07" -> "47";
             case "0A" -> "4A";
             default -> throw new IllegalArgumentException(
-                    "Mode DTC não suportado: " + mode);
+                    "Mode DTC não suportado: " + mode
+            );
         };
 
         if (!normalized.startsWith(expectedHeader)) {
             throw new ObdResponseException(
                     "Resposta incompatível. Esperado: " + expectedHeader
-                            + " | Recebido: " + normalized);
+                            + " | Recebido: " + normalized
+            );
         }
 
+        // Remove o byte de resposta positiva.
         String data = normalized.substring(2);
 
-        if (data.length() % 4 != 0) {
+        // É necessário pelo menos o byte de quantidade.
+        if (data.length() < 2) {
             throw new ObdResponseException(
-                    "Quantidade de bytes inválida na resposta DTC.");
+                    "Byte de quantidade de DTCs ausente."
+            );
+        }
+
+        int quantity = Integer.parseInt(data.substring(0, 2), 16);
+
+        // Cada DTC ocupa dois bytes (quatro caracteres hexadecimais).
+        int requiredLength = 2 + (quantity * 4);
+
+        if (data.length() < requiredLength) {
+            throw new ObdResponseException(
+                    "Quantidade de DTCs declarada não corresponde aos dados recebidos."
+            );
+        }
+
+        // Bytes excedentes são preenchimento CAN e devem ser zeros.
+        String padding = data.substring(requiredLength);
+
+        if (!padding.matches("(?:00)*")) {
+            throw new ObdResponseException(
+                    "Dados excedentes inválidos na resposta DTC."
+            );
         }
 
         List<String> dtcs = new ArrayList<>();
 
-        for (int i = 0; i < data.length(); i += 4) {
+        for (int i = 2; i < requiredLength; i += 4) {
 
             int a = Integer.parseInt(data.substring(i, i + 2), 16);
             int b = Integer.parseInt(data.substring(i + 2, i + 4), 16);
 
-            // 00 00 representa ausência de código
+            // 00 00 representa ausência de código.
             if (a == 0 && b == 0) {
                 continue;
             }
@@ -62,7 +99,7 @@ public abstract class DTCResponseParser {
         }
 
         return new DTCReading(
-                mode,
+                normalizedMode,
                 List.copyOf(dtcs),
                 Instant.now()
         );
@@ -74,7 +111,6 @@ public abstract class DTCResponseParser {
 
         int category = (a & 0xC0) >> 6;
         int firstDigit = (a & 0x30) >> 4;
-
         int secondDigit = a & 0x0F;
         int thirdDigit = (b & 0xF0) >> 4;
         int fourthDigit = b & 0x0F;
