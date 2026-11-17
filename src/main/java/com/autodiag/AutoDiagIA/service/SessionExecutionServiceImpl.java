@@ -147,8 +147,7 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
 
     @Transactional
     public void finish(SessionDTO sessionDTO, SessionEndReason reason) {
-        /*Session session = sessionRepository.findById(sessionDTO.getSessionId())
-                .orElse(null);*/
+
 
 
         sessionDTO.setFinishedAt(Instant.now());

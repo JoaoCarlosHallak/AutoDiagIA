@@ -1,6 +1,7 @@
 package com.autodiag.AutoDiagIA.obd;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
+import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 import java.io.IOException;
 import java.util.Locale;
@@ -19,7 +20,7 @@ public class ObdClient {
 
     }
 
-    public ObdReading readPid(ObdPid pid) throws IOException {
+    public ObdReading readPid(ObdPid pid) {
 
         String command = ObdCommand.commandToMode01(pid);
 
@@ -27,25 +28,19 @@ public class ObdClient {
         System.out.println("Comando enviado: " + command);
         System.out.println("Resposta recebida: [" + response + "]");
 
+        return ObdResponseParser.parse(response, pid);
 
-        try {
-            ObdReading reading =
-                    ObdResponseParser.parse(response, pid);
-            return reading;
-        } catch (IllegalArgumentException e) {
-            throw new ObdResponseException("Falha ao ler o PID " + pid.getCode(), e);
-        }
     }
 
 
-    public DTCReading readDTC(String mode) throws IOException {
+    public DTCReading readDTC(String mode)  {
 
         String command = switch (mode.toLowerCase(Locale.ROOT)) {
             case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();
             case "pendente" -> DTCMode.PENDENT_DTC.getCode();
             case "permanente" -> DTCMode.PERMANENT_DTC.getCode();
 
-            default -> throw new IllegalArgumentException(
+            default -> throw new InvalidObdRequestException(
                     "Tipo de DTC inválido: " + mode
             );
         };
@@ -55,14 +50,9 @@ public class ObdClient {
         System.out.println("Comando enviado: " + command);
         System.out.println("Resposta recebida: [" + response + "]");
 
-        try {
-            return DTCResponseParser.parse(response, command);
-        } catch (IllegalArgumentException e) {
-            throw new ObdResponseException(
-                    "Falha ao ler DTC no modo " + command, e
-            );
+        return DTCResponseParser.parse(response, command);
         }
-    }
+
 }
 
 

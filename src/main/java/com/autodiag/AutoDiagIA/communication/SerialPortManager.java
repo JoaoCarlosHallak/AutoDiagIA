@@ -1,5 +1,6 @@
 package com.autodiag.AutoDiagIA.communication;
 
+import com.autodiag.AutoDiagIA.exception.Elm327CommunicationException;
 import com.fazecast.jSerialComm.SerialPort;
 
 
@@ -16,7 +17,7 @@ public class SerialPortManager {
         port.setParity(parity);
 
         if (!port.openPort()) {
-            System.out.println("Could not open port for " + port.getDescriptivePortName());
+            throw new Elm327CommunicationException("Nao foi possivel abir a porta: " + port.getDescriptivePortName());
         }
 
         System.out.println("Opened port for " + port + " with baud rate " + port.getBaudRate() + " and parity " + port.getParity());

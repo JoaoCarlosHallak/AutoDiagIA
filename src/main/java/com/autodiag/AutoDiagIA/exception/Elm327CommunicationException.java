@@ -3,7 +3,7 @@ package com.autodiag.AutoDiagIA.exception;
 import java.io.IOException;
 
 
-public class Elm327CommunicationException extends IOException {
+public class Elm327CommunicationException extends RuntimeException {
 
 
     public Elm327CommunicationException(String message) {

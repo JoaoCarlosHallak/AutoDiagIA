@@ -18,14 +18,21 @@ public class Elm327Client {
     private final InputStream in;
 
 
-    public Elm327Client(SerialPort serialPort) throws IOException {
+    public Elm327Client(SerialPort serialPort){
        this.serialPort = serialPort;
-       this.out = serialPort.getOutputStream();
-       this.in = serialPort.getInputStream();
-       Elm327StartConfig();
+        try {
+            this.out = serialPort.getOutputStream();
+            this.in = serialPort.getInputStream();
+        } catch (IOException e) {
+            throw new Elm327CommunicationException(
+                    "Não foi possível acessar a porta serial.", e
+            );
+        }
+
+        Elm327StartConfig();
     }
 
-    private void Elm327StartConfig() throws IOException {
+    private void Elm327StartConfig()  {
         try {
             String reset = sendCommand("ATZ", 5000);
             System.out.println("Reset: " + reset.replace("\r", "\\r"));
@@ -53,30 +60,33 @@ public class Elm327Client {
         return sendCommand(command, 3000);
     }
 
-    public synchronized String sendCommand(String command, long timeoutMs) throws IOException {
-        while (in.available() > 0) in.read();
+    public synchronized String sendCommand(String command, long timeoutMs) {
+        try {
+            while (in.available() > 0) in.read();
 
-        out.write((command + "\r").getBytes(StandardCharsets.US_ASCII));
-        out.flush();
+            out.write((command + "\r").getBytes(StandardCharsets.US_ASCII));
+            out.flush();
 
-        StringBuilder sb = new StringBuilder();
-        long deadline = System.currentTimeMillis() + timeoutMs;
+            StringBuilder sb = new StringBuilder();
+            long deadline = System.currentTimeMillis() + timeoutMs;
 
-        while (System.currentTimeMillis() < deadline) {
-            if (in.available() > 0) {
-                int b = in.read();
-                if (b == -1) throw new IOException("Porta serial fechada");
-                if (b == '>') return sb.toString().trim();
-                sb.append((char) b);
-            } else {
-                try { Thread.sleep(5); }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Leitura interrompida", e);
+            while (System.currentTimeMillis() < deadline) {
+                if (in.available() > 0) {
+                    int b = in.read();
+                    if (b == -1) throw new IOException("Porta serial fechada");
+                    if (b == '>') return sb.toString().trim();
+                    sb.append((char) b);
+                } else {
+                    try { Thread.sleep(5); }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new Elm327CommunicationException("Leitura interrompida", e);
+                    }
                 }
             }
-        }
-        throw new IOException("Timeout aguardando '>' para " + command + ". Parcial: " + sb);
+            throw new Elm327CommunicationException("Timeout aguardando '>' para " + command + ". Parcial: " + sb);
+        } catch (IOException e) {
+            throw new Elm327CommunicationException("Falha na comunicacao serial com o ELM327: " + e.getMessage(), e);}
     }
 }
 

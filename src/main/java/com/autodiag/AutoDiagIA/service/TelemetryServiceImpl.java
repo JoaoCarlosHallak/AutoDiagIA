@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,12 +38,12 @@ public class TelemetryServiceImpl implements TelemetryService {
                 ObdPid obdPid = ObdPid.fromString(pid);
                 validPids.add(obdPid);
             } catch (IllegalArgumentException e) {
-                System.out.println("PID inválido: " + pid);
+                throw new InvalidObdRequestException("PID inválido: " + pid);
             }
         }
 
         if (validPids.isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new InvalidObdRequestException(
                 "Nenhum PID válido foi informado."
             );
         }
@@ -57,7 +58,7 @@ public class TelemetryServiceImpl implements TelemetryService {
             List<ObdReading> readings = telemetryCollector.collect(List.of(obdPid));
             return readings.getFirst();
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("PID inválido: " + name);
+            throw new InvalidObdRequestException("PID inválido: " + name);
         }
     }
 }
