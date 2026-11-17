@@ -25,7 +25,7 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
 
     @Override
-    public List<ObdReading> getPidsData(List<String> pids) throws IOException {
+    public List<ObdReading> getPidsData(List<String> pids)  {
 
         List<ObdPid> validPids = new ArrayList<>();
 
@@ -52,7 +52,7 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
 
     @Override 
-    public ObdReading getPidData(String name) throws IOException {
+    public ObdReading getPidData(String name) {
         try {
             ObdPid obdPid = ObdPid.fromString(name);
             List<ObdReading> readings = telemetryCollector.collect(List.of(obdPid));

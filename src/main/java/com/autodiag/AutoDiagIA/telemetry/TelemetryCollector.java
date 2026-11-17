@@ -21,8 +21,7 @@ public class TelemetryCollector {
         this.obdClient = obdClient;
     }
 
-    public List<ObdReading> collect(List<ObdPid> pids)
-            throws IOException {
+    public List<ObdReading> collect(List<ObdPid> pids) {
 
         List<ObdReading> readings = new ArrayList<>();
 

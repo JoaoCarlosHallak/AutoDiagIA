@@ -57,7 +57,7 @@ public class TelemetryScheduler {
 
                 readings.forEach(System.out::println);
 
-            } catch (IOException | RuntimeException e) {
+            } catch (RuntimeException e) {
                 System.err.println(
                         "Erro na coleta: " + e.getMessage()
                 );

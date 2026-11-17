@@ -105,7 +105,7 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
                 finish(sessionDTO, SessionEndReason.TRIGGER_REACHED);
             }
 
-        } catch (IOException | RuntimeException e) {
+        } catch (RuntimeException e) {
             System.err.println(
                     "Falha na coleta da sessão " + sessionId
                             + ": " + e.getMessage()

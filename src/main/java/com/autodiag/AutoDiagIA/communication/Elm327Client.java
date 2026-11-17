@@ -20,15 +20,8 @@ public class Elm327Client {
 
     public Elm327Client(SerialPort serialPort){
        this.serialPort = serialPort;
-        try {
-            this.out = serialPort.getOutputStream();
-            this.in = serialPort.getInputStream();
-        } catch (IOException e) {
-            throw new Elm327CommunicationException(
-                    "Não foi possível acessar a porta serial.", e
-            );
-        }
-
+        this.out = serialPort.getOutputStream();
+        this.in = serialPort.getInputStream();
         Elm327StartConfig();
     }
 
@@ -56,7 +49,7 @@ public class Elm327Client {
         }
     }
 
-    public synchronized String sendCommand(String command) throws IOException {
+    public synchronized String sendCommand(String command) {
         return sendCommand(command, 3000);
     }
 

@@ -40,7 +40,7 @@ public class TelemetryController {
 
 
     @PostMapping("/pid")
-    public ResponseEntity<List<ObdReading>> getPidsData(@RequestBody List<String> pids)  {
+    public ResponseEntity<List<ObdReading>> getPidsData(@RequestBody List<String> pids) {
         return new ResponseEntity<>(telemetryService.getPidsData(pids), HttpStatus.OK);
     }
 

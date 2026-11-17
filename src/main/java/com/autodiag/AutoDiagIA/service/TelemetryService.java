@@ -7,7 +7,7 @@ import com.autodiag.AutoDiagIA.obd.ObdReading;
 
 public interface TelemetryService {
 
-    List<ObdReading> getPidsData(List<String> pids) throws IOException;
-    ObdReading getPidData(String name) throws IOException;
+    List<ObdReading> getPidsData(List<String> pids);
+    ObdReading getPidData(String name);
 
 }

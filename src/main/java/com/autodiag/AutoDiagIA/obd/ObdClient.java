@@ -33,7 +33,7 @@ public class ObdClient {
     }
 
 
-    public DTCReading readDTC(String mode)  {
+    public DTCReading readDTC(String mode) throws IOException {
 
         String command = switch (mode.toLowerCase(Locale.ROOT)) {
             case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();
