@@ -117,6 +117,12 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
     }
 
     private boolean triggerReached(Session session, List<ObdReading> readings) {
+        if (session.getTriggerPid() == null
+            || session.getTriggerOperator() == null
+            || session.getTriggerValue() == null
+            || session.getTriggerValueIndex() == null) {
+            return false;
+        }
         for (ObdReading reading : readings) {
 
             int index = session.getTriggerValueIndex();
