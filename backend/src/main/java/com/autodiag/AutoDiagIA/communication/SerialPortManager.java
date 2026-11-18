@@ -1,0 +1,49 @@
+package com.autodiag.AutoDiagIA.communication;
+
+import com.autodiag.AutoDiagIA.exception.Elm327CommunicationException;
+import com.fazecast.jSerialComm.SerialPort;
+
+
+
+public class SerialPortManager {
+
+
+
+    public static void openAndSetCommPort(SerialPort port, int baudRate, int numDataBits, int numStopBits, int parity) {
+        port.setBaudRate(baudRate);
+        port.setNumDataBits(numDataBits);
+        port.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 3000, 0); // 3 SEGUNDOS DE TIMEOUT
+        port.setNumStopBits(numStopBits);
+        port.setParity(parity);
+
+        if (!port.openPort()) {
+            throw new Elm327CommunicationException("Nao foi possivel abir a porta: " + port.getDescriptivePortName());
+        }
+
+        System.out.println("Opened port for " + port + " with baud rate " + port.getBaudRate() + " and parity " + port.getParity());
+
+    }
+
+    public static void closeCommPort(SerialPort port) {
+        if (port.closePort()) {
+            System.out.println("Closed port for " + port);
+            return;
+        }
+        System.out.println("Error closing port for " + port);
+    }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
