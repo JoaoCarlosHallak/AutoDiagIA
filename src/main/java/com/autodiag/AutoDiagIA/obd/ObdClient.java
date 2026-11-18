@@ -3,7 +3,6 @@ package com.autodiag.AutoDiagIA.obd;
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
-import java.io.IOException;
 import java.util.Locale;
 
 
@@ -33,7 +32,7 @@ public class ObdClient {
     }
 
 
-    public DTCReading readDTC(String mode) throws IOException {
+    public DTCReading readDTC(String mode) {
 
         String command = switch (mode.toLowerCase(Locale.ROOT)) {
             case "confirmado" -> DTCMode.CONFIRMED_DTC.getCode();

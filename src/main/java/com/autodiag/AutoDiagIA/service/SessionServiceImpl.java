@@ -5,7 +5,10 @@ import java.util.List;
 
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.session.SessionEndReason;
-import jakarta.persistence.EntityNotFoundException;
+import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
+import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
+import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
+import com.autodiag.AutoDiagIA.exception.ResourceNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,21 +44,25 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public SessionDTO create(CreateSessionRequest request) {
+        if (request == null) {
+            throw new InvalidRequestException("Os dados da sessão não foram informados.");
+        }
 
         if (request.pids() == null || request.pids().isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new InvalidRequestException(
                     "Informe pelo menos um PID."
             );
         }
 
         if (request.intervalMs() <= 0 || request.maxDurationMs() <= 0) {
-            throw new IllegalArgumentException(
+            throw new InvalidRequestException(
                     "Intervalo e duração máxima devem ser positivos."
             );
         }
 
         List<String> validPids = request.pids().stream()
-                .map(pid -> ObdPid.fromString(pid).getCode()).toList();
+                .map(this::toPidCode)
+                .toList();
 
         Session session = new Session();
         session.setVehicle(request.vehicle());
@@ -65,9 +72,17 @@ public class SessionServiceImpl implements SessionService {
         session.setMaxDurationMs(request.maxDurationMs());
         session.setCreatedAt(Instant.now());
 
-        if (request.trigger() != null && request.trigger().getValueIndex() >= 0) {
+        if (request.trigger() != null) {
+            if (request.trigger().getValueIndex() == null
+                    || request.trigger().getValueIndex() < 0
+                    || request.trigger().getOperator() == null
+                    || request.trigger().getTriggerValue() == null) {
+                throw new InvalidRequestException(
+                        "A configuração do gatilho está incompleta."
+                );
+            }
             session.setTriggerPid(
-                    ObdPid.fromString(request.trigger().getPid()).getCode()
+                    toPidCode(request.trigger().getPid())
             );
             session.setTriggerOperator(request.trigger().getOperator());
             session.setTriggerValue(request.trigger().getTriggerValue());
@@ -95,12 +110,12 @@ public class SessionServiceImpl implements SessionService {
     public SessionDTO start(Long id) {
 
         Session session = sessionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Sessão de id: " + id + " inexistente"
                 ));
 
         if (session.getStatus() != SessionStatus.CREATED) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "Não é possível iniciar uma sessão no estado "
                             + session.getStatus()
             );
@@ -114,10 +129,14 @@ public class SessionServiceImpl implements SessionService {
         try {
             sessionExecutionService.start(sessionDTO);
         } catch (RuntimeException e) {
-            sessionExecutionService.finish(
-                    sessionDTO,
-                    SessionEndReason.ERROR
-            );
+            try {
+                sessionExecutionService.finish(
+                        sessionDTO,
+                        SessionEndReason.ERROR
+                );
+            } catch (RuntimeException finishException) {
+                e.addSuppressed(finishException);
+            }
             throw e;
         }
 
@@ -129,12 +148,12 @@ public class SessionServiceImpl implements SessionService {
     public SessionDTO stop(Long id) {
 
         Session session = sessionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Sessão de id: " + id + " inexistente"
                 ));
 
         if (session.getStatus() != SessionStatus.RUNNING) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "Não é possível encerrar uma sessão no estado "
                             + session.getStatus()
             );
@@ -145,7 +164,8 @@ public class SessionServiceImpl implements SessionService {
                 SessionEndReason.USER_STOPPED
         );
 
-        session = sessionRepository.findById(id).orElseThrow();
+        session = sessionRepository.findById(id).orElseThrow(() ->
+                new ResourceNotFoundException("Sessão de id: " + id + " inexistente"));
 
         return modelMapper.map(session, SessionDTO.class);
     }
@@ -158,11 +178,18 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public SessionDTO findById(Long id){
         return modelMapper.map(
-                sessionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Sessão de id: " + id + " inexistente")),
+                sessionRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sessão de id: " + id + " inexistente")),
                 SessionDTO.class);
 
     }
 
+    private String toPidCode(String pid) {
+        try {
+            return ObdPid.fromString(pid).getCode();
+        } catch (IllegalArgumentException e) {
+            throw new InvalidObdRequestException("PID inválido: " + pid, e);
+        }
+    }
 
 }
 

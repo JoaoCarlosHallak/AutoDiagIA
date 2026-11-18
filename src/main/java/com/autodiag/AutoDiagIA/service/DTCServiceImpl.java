@@ -7,7 +7,6 @@ import com.autodiag.AutoDiagIA.obd.ObdClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -23,7 +22,7 @@ public class DTCServiceImpl implements DTCService {
 
 
     @Override
-    public DTCReading getDTCbyMode(String mode) throws IOException {
+    public DTCReading getDTCbyMode(String mode) {
         mode = mode.toLowerCase();
 
         if (!(List.of("confirmado", "pendente", "permanente").contains(mode))) {

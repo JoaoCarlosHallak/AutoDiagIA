@@ -2,6 +2,7 @@ package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.exception.AiServiceException;
 import com.autodiag.AutoDiagIA.util.PromptBuilder;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
@@ -65,9 +66,9 @@ public class AIServiceImpl implements AIService {
 
             return response.text();
 
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Error in the call to AI " + e.getMessage(), e
+        } catch (RuntimeException e) {
+            throw new AiServiceException(
+                    "Falha ao solicitar análise ao serviço de IA.", e
             );
 
         } finally {

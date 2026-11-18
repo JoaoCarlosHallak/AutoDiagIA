@@ -5,11 +5,13 @@ import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
+import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
+import com.autodiag.AutoDiagIA.exception.ResourceNotFoundException;
 import com.autodiag.AutoDiagIA.repository.LogRepository;
 
 import com.autodiag.AutoDiagIA.repository.SessionRepository;
 import com.autodiag.AutoDiagIA.session.SessionStatus;
-import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -76,14 +78,14 @@ public class SessionLogServiceImpl implements SessionLogService {
             Pageable pageable) {
 
         if (!sessionRepository.existsById(sessionId)) {
-            throw new EntityNotFoundException(
+            throw new ResourceNotFoundException(
                     "Sessão de id: " + sessionId + " inexistente"
             );
         }
 
         if (fromTime != null && toTime != null
                 && fromTime.isAfter(toTime)) {
-            throw new IllegalArgumentException(
+            throw new InvalidRequestException(
                     "A data inicial não pode ser posterior à data final."
             );
         }
@@ -112,12 +114,12 @@ public class SessionLogServiceImpl implements SessionLogService {
     public String analyse(Long sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException(
+                        new ResourceNotFoundException(
                                 "Sessão de id: " + sessionId + " inexistente"
                         ));
 
         if (session.getStatus() != SessionStatus.FINISHED) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "Não é possível analisar uma sessão no estado "
                             + session.getStatus()
             );
@@ -129,7 +131,7 @@ public class SessionLogServiceImpl implements SessionLogService {
                         .toList();
 
         if (sessionData.isEmpty()) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "Não existem registros de telemetria para analisar."
             );
         }

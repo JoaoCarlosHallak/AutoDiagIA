@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-
 @RestController
 @RequestMapping("/dtc")
 public class DTCController {
@@ -27,7 +25,7 @@ public class DTCController {
 
 
     @GetMapping("/{mode}")
-    public ResponseEntity<DTCReading> getDTC(@PathVariable String mode) throws IOException {
+    public ResponseEntity<DTCReading> getDTC(@PathVariable String mode) {
         return new ResponseEntity<>(dtcService.getDTCbyMode(mode), HttpStatus.OK);
     }
 

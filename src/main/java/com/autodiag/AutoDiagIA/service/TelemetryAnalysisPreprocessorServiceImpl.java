@@ -1,6 +1,7 @@
 package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
+import com.autodiag.AutoDiagIA.exception.InvalidTelemetryDataException;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -17,7 +18,7 @@ public class TelemetryAnalysisPreprocessorServiceImpl implements TelemetryAnalys
     public String prepareData(List<LogDTO> logs) {
 
         if (logs == null || logs.isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new InvalidTelemetryDataException(
                     "Não existem logs para preparar."
             );
         }
@@ -25,13 +26,13 @@ public class TelemetryAnalysisPreprocessorServiceImpl implements TelemetryAnalys
         List<LogDTO> orderedLogs = logs.stream()
                 .peek(log -> {
                     if (log.getTimestamp() == null) {
-                        throw new IllegalArgumentException(
+                        throw new InvalidTelemetryDataException(
                                 "Foi encontrado um log sem timestamp."
                         );
                     }
 
                     if (log.getPid() == null || log.getValue() == null) {
-                        throw new IllegalArgumentException(
+                        throw new InvalidTelemetryDataException(
                                 "Foi encontrado um log sem PID ou valor."
                         );
                     }

@@ -3,6 +3,7 @@ package com.autodiag.AutoDiagIA.service;
 import com.autodiag.AutoDiagIA.dto.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.entity.SessionPid;
+import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 import com.autodiag.AutoDiagIA.obd.ObdClient;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
@@ -60,7 +61,7 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
 
     public synchronized void start(SessionDTO session) {
         if (tasks.containsKey(session.getSessionId())) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "A sessão já possui uma tarefa de coleta."
             );
         }

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 
 public final class DTCResponseParser {
@@ -41,7 +42,7 @@ public final class DTCResponseParser {
             case "03" -> "43";
             case "07" -> "47";
             case "0A" -> "4A";
-            default -> throw new IllegalArgumentException(
+            default -> throw new InvalidObdRequestException(
                     "Mode DTC não suportado: " + mode
             );
         };

@@ -1,7 +1,5 @@
 package com.autodiag.AutoDiagIA.config;
 
-import java.io.IOException;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,7 +12,7 @@ public class CommunicationConfig {
 
 
     @Bean(destroyMethod = "closePort")
-    public SerialPort serialPort() throws IOException {
+    public SerialPort serialPort() {
         SerialPort port = SerialPort.getCommPort("COM3");
 
         SerialPortManager.openAndSetCommPort(

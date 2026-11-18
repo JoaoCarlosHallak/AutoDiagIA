@@ -1,13 +1,15 @@
 package com.autodiag.AutoDiagIA.telemetry;
 import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
+import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
 import com.autodiag.AutoDiagIA.service.TelemetryService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
-import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -31,21 +33,25 @@ public class TelemetryScheduler {
     public synchronized void start(List<String> pids,long intervalMs) {
 
         if (collectionTask != null && !collectionTask.isDone()) {
-            throw new IllegalStateException(
+            throw new InvalidOperationException(
                     "Já existe uma coleta ativa."
             );
         }
 
         if (pids == null || pids.isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new InvalidRequestException(
                     "Informe pelo menos um PID."
             );
         }
 
         if (intervalMs < 1000) {
-            throw new IllegalArgumentException(
+            throw new InvalidRequestException(
                     "O intervalo mínimo é de 1000 ms."
             );
+        }
+
+        if (pids.stream().anyMatch(Objects::isNull)) {
+            throw new InvalidRequestException("A lista de PIDs contém um valor nulo.");
         }
 
         List<String> requestedPids = List.copyOf(pids);
