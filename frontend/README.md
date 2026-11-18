@@ -1,75 +1,45 @@
-# React + TypeScript + Vite
+# Frontend AutoDiagIA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface React + TypeScript + Vite para o sistema de diagnóstico veicular
+AutoDiagIA.
 
-Currently, two official plugins are available:
+## Executar localmente
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Na pasta `frontend`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm install
+Copy-Item .env.example .env.local
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Por padrão, `/api` é encaminhado pelo Vite para `http://localhost:8080`. Defina
+`VITE_API_PROXY_TARGET` em `.env.local` se o backend Spring Boot estiver em outro
+endereço. `VITE_API_BASE_URL` permite configurar outra URL base da API; uma URL
+cross-origin direta exige que o backend ou o proxy de implantação permita essa
+origem.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Verificações
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm run build
+npm run lint
 ```
+
+## Telemetria ao vivo
+
+Ao iniciar a atualização ao vivo, a interface consulta repetidamente o endpoint
+de leitura dos PIDs selecionados, sem sobrepor requisições. O intervalo mínimo
+é 1000 ms, mas a frequência real também depende do tempo de resposta do
+adaptador OBD-II. A atualização é interrompida ao sair da página ou ao clicar
+em “Parar atualização”.
+
+Durante a atualização, a tela mantém até 60 segundos de amostras numéricas em
+memória e exibe uma linha de tendência por leitura. O histórico é temporário:
+não é salvo e desaparece ao recarregar ou sair da página.
+
+O endpoint de coleta periódica do backend não é usado nesta tela, pois não
+disponibiliza as amostras coletadas à interface.
+
+O catálogo de PIDs selecionáveis espelha o enum `ObdPid` do backend e deve ser
+atualizado quando esse enum mudar.
