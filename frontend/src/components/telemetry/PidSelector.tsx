@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PID_OPTIONS } from '../../data/obdPids'
 
 interface PidSelectorProps {
@@ -21,11 +21,23 @@ export function PidSelector({
   onReadSelected,
 }: PidSelectorProps) {
   const [filter, setFilter] = useState('')
+  const [openInfoPid, setOpenInfoPid] = useState<string | null>(null)
   const visiblePids = PID_OPTIONS.filter((pid) =>
     `${pid.code} ${pid.name} ${pid.description}`
       .toLocaleLowerCase('pt-BR')
       .includes(filter.trim().toLocaleLowerCase('pt-BR')),
   )
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpenInfoPid(null)
+      }
+    }
+
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [])
 
   return (
     <section className="telemetry-panel" aria-labelledby="pid-panel-title">
@@ -74,30 +86,59 @@ export function PidSelector({
           Parâmetros disponíveis para leitura
         </legend>
         {visiblePids.map((pid) => (
-          <div className="pid-option" key={pid.code}>
-            <label className="pid-select" htmlFor={`pid-${pid.code}`}>
-              <input
-                checked={selectedPids.includes(pid.code)}
-                disabled={isReading}
-                id={`pid-${pid.code}`}
-                onChange={() => onTogglePid(pid.code)}
-                type="checkbox"
-              />
-              <span className="pid-checkmark" aria-hidden="true" />
-              <span className="pid-copy">
-                <span className="pid-name">{pid.name}</span>
-                <span className="pid-description">{pid.description}</span>
-              </span>
+          <div className="pid-item" key={pid.code}>
+            <div className="pid-option">
+              <label className="pid-select" htmlFor={`pid-${pid.code}`}>
+                <input
+                  checked={selectedPids.includes(pid.code)}
+                  disabled={isReading}
+                  id={`pid-${pid.code}`}
+                  onChange={() => onTogglePid(pid.code)}
+                  type="checkbox"
+                />
+                <span className="pid-checkmark" aria-hidden="true" />
+                <span className="pid-copy">
+                  <span className="pid-name">{pid.name}</span>
+                  <span className="pid-description">{pid.description}</span>
+                </span>
+              </label>
+              <div className="pid-info-wrap">
+                <button
+                  aria-controls={`pid-info-${pid.code}`}
+                  aria-expanded={openInfoPid === pid.code}
+                  aria-label={`Informações sobre ${pid.name}`}
+                  className="pid-info-button"
+                  onClick={() =>
+                    setOpenInfoPid((current) =>
+                      current === pid.code ? null : pid.code,
+                    )
+                  }
+                  type="button"
+                >
+                  i
+                </button>
+              </div>
               <code className="pid-code">{pid.code}</code>
-            </label>
-            <button
-              className="button-quiet"
-              disabled={isReading || isLiveUpdating}
-              onClick={() => onReadPid(pid.code)}
-              type="button"
-            >
-              {readingPid === pid.code ? 'Lendo…' : 'Ler'}
-            </button>
+              <button
+                className="button-quiet"
+                disabled={isReading || isLiveUpdating}
+                onClick={() => onReadPid(pid.code)}
+                type="button"
+              >
+                {readingPid === pid.code ? 'Lendo…' : 'Ler'}
+              </button>
+            </div>
+            {openInfoPid === pid.code && (
+              <div
+                className="pid-info-panel"
+                id={`pid-info-${pid.code}`}
+                role="region"
+                aria-label={`Informações sobre ${pid.name}`}
+              >
+                <strong>{pid.name}</strong>
+                <span>{pid.info}</span>
+              </div>
+            )}
           </div>
         ))}
         {visiblePids.length === 0 && (
