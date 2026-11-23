@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Sidebar } from './components/layout/Sidebar'
 import { TopBar } from './components/layout/TopBar'
 import { TelemetryPage } from './pages/TelemetryPage'
+import { DtcPage } from './pages/DtcPage'
 import { SectionPlaceholder } from './pages/SectionPlaceholder'
 import { type SectionId } from './sections'
 import './App.css'
@@ -20,6 +21,8 @@ function App() {
         <main className="page-content" id="main-content">
           {activeSection === 'telemetry' ? (
             <TelemetryPage />
+          ) : activeSection === 'dtc' ? (
+            <DtcPage />
           ) : (
             <SectionPlaceholder section={activeSection} />
           )}

@@ -94,6 +94,12 @@ public class GlobalExceptionHandler {
         return internalError(exception, request);
     }
 
+    public ResponseEntity<ApiError> handleUnexpectedException(
+            Exception exception,
+            HttpServletRequest request) {
+        return handleUnexpected(exception, request);
+    }
+
     private ResponseEntity<ApiError> apiError(
             HttpStatus status,
             String detail,

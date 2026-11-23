@@ -60,6 +60,19 @@ class DTCResponseParserTest {
     }
 
     @Test
+    void deveDecodificarDtcsPermanentesSemByteDeQuantidade() {
+
+        String response = "4A 03 00 01 15";
+
+        DTCReading reading = DTCResponseParser.parse(response, "0A");
+
+        assertEquals("0A", reading.mode());
+        assertEquals(2, reading.codes().size());
+        assertEquals("P0300", reading.codes().get(0));
+        assertEquals("P0115", reading.codes().get(1));
+    }
+
+    @Test
     void deveLancarExcecaoParaRespostaVazia() {
 
         assertThrows(
