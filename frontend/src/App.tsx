@@ -3,6 +3,7 @@ import { Sidebar } from './components/layout/Sidebar'
 import { TopBar } from './components/layout/TopBar'
 import { TelemetryPage } from './pages/TelemetryPage'
 import { DtcPage } from './pages/DtcPage'
+import { SessionsPage } from './pages/SessionsPage'
 import { SectionPlaceholder } from './pages/SectionPlaceholder'
 import { type SectionId } from './sections'
 import './App.css'
@@ -23,6 +24,8 @@ function App() {
             <TelemetryPage />
           ) : activeSection === 'dtc' ? (
             <DtcPage />
+          ) : activeSection === 'sessions' ? (
+            <SessionsPage />
           ) : (
             <SectionPlaceholder section={activeSection} />
           )}

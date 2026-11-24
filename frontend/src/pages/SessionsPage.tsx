@@ -1,0 +1,718 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import { sampleCorrelation } from 'simple-statistics'
+import {
+  analyseSession,
+  createSession,
+  getSession,
+  getSessionLogs,
+  listSessions,
+  startSession,
+  stopSession,
+} from '../api/sessionService'
+import { PID_OPTIONS } from '../data/obdPids'
+import type {
+  CreateSessionRequest,
+  LogDTO,
+  SessionDTO,
+  TriggerOperator,
+} from '../types/session'
+import { SectionHeading } from './SectionHeading'
+import './SessionsPage.css'
+
+type View = 'history' | 'create' | 'running' | 'explore'
+
+const STATUS_LABEL: Record<SessionDTO['status'], string> = {
+  CREATED: 'Criada',
+  RUNNING: 'Em execução',
+  FINISHED: 'Finalizada',
+  FAILED: 'Falhou',
+}
+
+const END_REASON_LABEL: Record<NonNullable<SessionDTO['endReason']>, string> = {
+  TRIGGER_REACHED: 'Trigger atingido',
+  MAX_DURATION_REACHED: 'Duração máxima atingida',
+  USER_STOPPED: 'Encerrada pelo usuário',
+  ERROR: 'Erro durante a aquisição',
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : 'Ocorreu um erro inesperado.'
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return 'Não informado'
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  }).format(new Date(value))
+}
+
+function formatDuration(milliseconds: number): string {
+  const seconds = Math.floor(milliseconds / 1000)
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remaining = seconds % 60
+  return hours > 0
+    ? `${hours}h ${minutes}m ${remaining}s`
+    : `${minutes}m ${remaining}s`
+}
+
+function deduplicateChronologically(logs: LogDTO[]): LogDTO[] {
+  const unique = new Map(logs.map((log) => [log.id, log]))
+  return [...unique.values()].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  )
+}
+
+async function loadAllLogs(id: number): Promise<LogDTO[]> {
+  const first = await getSessionLogs(id, 0, 500)
+  const logs = [...first.content]
+  for (let page = 1; page < first.totalPages; page += 1) {
+    const next = await getSessionLogs(id, page, 500)
+    logs.push(...next.content)
+  }
+  return deduplicateChronologically(logs)
+}
+
+export function SessionsPage() {
+  const [sessions, setSessions] = useState<SessionDTO[]>([])
+  const [selected, setSelected] = useState<SessionDTO | null>(null)
+  const [view, setView] = useState<View>('history')
+  const [logs, setLogs] = useState<LogDTO[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const [visiblePids, setVisiblePids] = useState<string[]>([])
+  const [chartPid, setChartPid] = useState('')
+  const [scatterX, setScatterX] = useState('')
+  const [scatterY, setScatterY] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiResult, setAiResult] = useState('')
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const [vehicle, setVehicle] = useState('')
+  const [startReason, setStartReason] = useState('')
+  const [selectedPids, setSelectedPids] = useState<string[]>(['0C', '0D'])
+  const [intervalMs, setIntervalMs] = useState(1000)
+  const [maxDurationMs, setMaxDurationMs] = useState(300000)
+  const [triggerEnabled, setTriggerEnabled] = useState(false)
+  const [triggerPid, setTriggerPid] = useState('0C')
+  const [triggerIndex, setTriggerIndex] = useState(0)
+  const [triggerOperator, setTriggerOperator] =
+    useState<TriggerOperator>('GTE')
+  const [triggerValue, setTriggerValue] = useState(3000)
+
+  async function refreshSessions() {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await listSessions()
+      setSessions([...result].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ))
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+
+    async function loadInitialSessions() {
+      try {
+        const result = await listSessions()
+        if (!active) return
+        setSessions([...result].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime(),
+        ))
+      } catch (caught) {
+        if (active) setError(describeError(caught))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void loadInitialSessions()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const sessionId = selected?.sessionId
+    const sessionStatus = selected?.status
+    const acquisitionInterval = selected?.intervalMs
+    if (!sessionId || sessionStatus !== 'RUNNING') return
+    let active = true
+    const poll = async () => {
+      try {
+        const [fresh, records] = await Promise.all([
+          getSession(sessionId),
+          loadAllLogs(sessionId),
+        ])
+        if (!active) return
+        setSelected(fresh)
+        setLogs(records)
+        if (fresh.status !== 'RUNNING') {
+          setView(fresh.status === 'FINISHED' ? 'explore' : 'history')
+        }
+      } catch (caught) {
+        if (active) setError(describeError(caught))
+      }
+    }
+    void poll()
+    const id = window.setInterval(
+      poll,
+      Math.max(acquisitionInterval ?? 1000, 1000),
+    )
+    return () => {
+      active = false
+      window.clearInterval(id)
+    }
+  }, [
+    selected?.sessionId,
+    selected?.status,
+    selected?.intervalMs,
+  ])
+
+  useEffect(() => {
+    if (!selected?.startedAt || selected.status !== 'RUNNING') return
+    const update = () => {
+      setElapsedMs(Math.max(0, Date.now() - new Date(selected.startedAt!).getTime()))
+    }
+    update()
+    const id = window.setInterval(update, 1000)
+    return () => window.clearInterval(id)
+  }, [selected?.startedAt, selected?.status])
+
+  const pidGroups = useMemo(() => {
+    const result = new Map<string, LogDTO[]>()
+    logs.forEach((log) => {
+      result.set(log.pid, [...(result.get(log.pid) ?? []), log])
+    })
+    return result
+  }, [logs])
+
+  const pidOptions = useMemo(
+    () => [...pidGroups.keys()].sort(),
+    [pidGroups],
+  )
+
+  async function selectSession(session: SessionDTO) {
+    setLoading(true)
+    setError(null)
+    setAiResult('')
+    setAiError(null)
+    try {
+      const fresh = await getSession(session.sessionId)
+      setSelected(fresh)
+      if (fresh.status === 'CREATED') setView('history')
+      if (fresh.status === 'RUNNING') setView('running')
+      if (fresh.status === 'FINISHED') {
+        const records = await loadAllLogs(fresh.sessionId)
+        setLogs(records)
+        const pids = [...new Set(records.map((log) => log.pid))]
+        setVisiblePids(pids)
+        setChartPid(pids[0] ?? '')
+        setScatterX(pids[0] ?? '')
+        setScatterY(pids[1] ?? pids[0] ?? '')
+        setView('explore')
+      }
+      if (fresh.status === 'FAILED') setView('history')
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function openCreate(session?: SessionDTO) {
+    if (session) {
+      setVehicle(session.vehicle ?? '')
+      setStartReason(session.startReason ?? '')
+      setIntervalMs(session.intervalMs)
+      setMaxDurationMs(session.maxDurationMs)
+      if (session.triggerConfig) {
+        setTriggerEnabled(true)
+        setTriggerPid(session.triggerConfig.pid)
+        setTriggerIndex(session.triggerConfig.valueIndex)
+        setTriggerOperator(session.triggerConfig.operator)
+        setTriggerValue(session.triggerConfig.triggerValue)
+      } else {
+        setTriggerEnabled(false)
+      }
+      void getSessionLogs(session.sessionId, 0, 500).then((page) => {
+        setSelectedPids([...new Set(page.content.map((log) => log.pid))])
+      }).catch(() => undefined)
+    } else {
+      setVehicle('')
+      setStartReason('')
+      setSelectedPids(['0C', '0D'])
+      setIntervalMs(1000)
+      setMaxDurationMs(300000)
+      setTriggerEnabled(false)
+    }
+    setView('create')
+  }
+
+  async function handleCreate() {
+    if (!vehicle.trim() || selectedPids.length === 0) {
+      setError('Informe o veículo e selecione pelo menos um PID.')
+      return
+    }
+    if (intervalMs <= 0 || maxDurationMs <= 0) {
+      setError('Intervalo e duração máxima devem ser positivos.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const request: CreateSessionRequest = {
+        vehicle: vehicle.trim(),
+        pids: selectedPids,
+        intervalMs,
+        startReason: startReason.trim(),
+        maxDurationMs,
+        trigger: triggerEnabled
+          ? {
+              pid: triggerPid,
+              valueIndex: triggerIndex,
+              operator: triggerOperator,
+              triggerValue,
+            }
+          : null,
+      }
+      const created = await createSession(request)
+      setSessions((current) => [created, ...current])
+      setSelected(created)
+      setView('history')
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleStart() {
+    if (!selected) return
+    setLoading(true)
+    setError(null)
+    try {
+      const started = await startSession(selected.sessionId)
+      setSelected(started)
+      setLogs([])
+      setView('running')
+      await refreshSessions()
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleStop() {
+    if (!selected) return
+    setLoading(true)
+    try {
+      const stopped = await stopSession(selected.sessionId)
+      setSelected(stopped)
+      await refreshSessions()
+      setView('history')
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAnalyse() {
+    if (!selected) return
+    setAiLoading(true)
+    setAiError(null)
+    setAiResult('')
+    try {
+      setAiResult(await analyseSession(selected.sessionId))
+    } catch (caught) {
+      setAiError(describeError(caught))
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  function togglePid(pid: string) {
+    setSelectedPids((current) =>
+      current.includes(pid)
+        ? current.filter((item) => item !== pid)
+        : [...current, pid],
+    )
+  }
+
+  const chartRecords = useMemo(() => {
+    if (!chartPid) return []
+    return (pidGroups.get(chartPid) ?? []).map((log) => ({
+      timestamp: new Date(log.timestamp).getTime(),
+      label: formatDate(log.timestamp),
+      value: log.value,
+    }))
+  }, [chartPid, pidGroups])
+
+  const scatterRecords = useMemo(() => {
+    if (!scatterX || !scatterY) return []
+    const yValues = pidGroups.get(scatterY) ?? []
+    return (pidGroups.get(scatterX) ?? [])
+      .map((xLog) => {
+        let nearest: LogDTO | undefined
+        let nearestDistance = Number.POSITIVE_INFINITY
+        yValues.forEach((yLog) => {
+          const distance = Math.abs(
+            new Date(yLog.timestamp).getTime() -
+              new Date(xLog.timestamp).getTime(),
+          )
+          if (distance < nearestDistance) {
+            nearestDistance = distance
+            nearest = yLog
+          }
+        })
+        if (!nearest || nearestDistance > 2000) return null
+        return { x: xLog.value, y: nearest.value }
+      })
+      .filter(
+        (point): point is { x: number; y: number } =>
+          point !== null && point.x !== null && point.y !== null,
+      )
+  }, [pidGroups, scatterX, scatterY])
+
+  const correlation = useMemo(() => {
+    if (scatterRecords.length < 2) return null
+    return sampleCorrelation(
+      scatterRecords.map((point) => point.x),
+      scatterRecords.map((point) => point.y),
+    )
+  }, [scatterRecords])
+
+  const statistics = useMemo(() => {
+    return visiblePids.map((pid) => {
+      const values = (pidGroups.get(pid) ?? [])
+        .map((log) => log.value)
+        .filter((value): value is number => value !== null)
+      const sorted = [...values].sort((a, b) => a - b)
+      const average = values.length
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
+        : null
+      const median = sorted.length
+        ? sorted.length % 2
+          ? sorted[Math.floor(sorted.length / 2)]
+          : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+        : null
+      const variance = average !== null && values.length
+        ? values.reduce((sum, value) => sum + (value - average) ** 2, 0) /
+          values.length
+        : null
+      return {
+        pid,
+        unit: pidGroups.get(pid)?.[0]?.unit ?? '',
+        average,
+        median,
+        min: sorted[0] ?? null,
+        max: sorted.at(-1) ?? null,
+        deviation: variance === null ? null : Math.sqrt(variance),
+        count: values.length,
+      }
+    })
+  }, [pidGroups, visiblePids])
+
+  return (
+    <>
+      <SectionHeading section="sessions" />
+
+      {error && <p className="sessions-error" role="alert">{error}</p>}
+
+      {view === 'history' && (
+        <div className="sessions-layout">
+          <section className="sessions-panel history-panel">
+            <div className="sessions-panel-heading">
+              <div>
+                <p className="sessions-kicker">Aquisições</p>
+                <h3>Histórico de sessões</h3>
+              </div>
+              <button className="button-primary" onClick={() => openCreate()} type="button">
+                Nova sessão
+              </button>
+            </div>
+
+            {loading ? (
+              <p className="sessions-status">Carregando sessões…</p>
+            ) : sessions.length === 0 ? (
+              <div className="sessions-empty">
+                <span>—</span>
+                <p>Nenhuma sessão encontrada.</p>
+                <button className="button-secondary" onClick={() => openCreate()} type="button">
+                  Criar primeira sessão
+                </button>
+              </div>
+            ) : (
+              <div className="session-list">
+                {sessions.map((session) => (
+                  <button
+                    className={`session-row ${selected?.sessionId === session.sessionId ? 'is-selected' : ''}`}
+                    key={session.sessionId}
+                    onClick={() => void selectSession(session)}
+                    type="button"
+                  >
+                    <span className={`status-dot status-${session.status.toLowerCase()}`} />
+                    <div className="session-row-main">
+                      <strong>{session.vehicle}</strong>
+                      <span>{session.startReason || 'Sem descrição'}</span>
+                    </div>
+                    <div className="session-row-meta">
+                      <span>{STATUS_LABEL[session.status]}</span>
+                      <time>{formatDate(session.createdAt)}</time>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {selected && (
+            <section className="sessions-panel session-detail">
+              <p className="sessions-kicker">Sessão #{selected.sessionId}</p>
+              <h3>{selected.vehicle}</h3>
+              <dl className="session-details">
+                <div><dt>Status</dt><dd>{STATUS_LABEL[selected.status]}</dd></div>
+                <div><dt>Criada em</dt><dd>{formatDate(selected.createdAt)}</dd></div>
+                <div><dt>Iniciada em</dt><dd>{formatDate(selected.startedAt)}</dd></div>
+                <div><dt>Intervalo</dt><dd>{selected.intervalMs} ms</dd></div>
+                <div><dt>Duração máxima</dt><dd>{formatDuration(selected.maxDurationMs)}</dd></div>
+                {selected.finishedAt && <div><dt>Finalizada em</dt><dd>{formatDate(selected.finishedAt)}</dd></div>}
+                {selected.endReason && <div><dt>Encerramento</dt><dd>{END_REASON_LABEL[selected.endReason]}</dd></div>}
+              </dl>
+              <div className="session-detail-actions">
+                {selected.status === 'CREATED' && (
+                  <button className="button-primary" disabled={loading} onClick={() => void handleStart()} type="button">
+                    Iniciar aquisição
+                  </button>
+                )}
+                {selected.status === 'FINISHED' && (
+                  <button className="button-primary" onClick={() => void selectSession(selected)} type="button">
+                    Explorar dados
+                  </button>
+                )}
+                {selected.status === 'RUNNING' && (
+                  <button className="button-primary" onClick={() => setView('running')} type="button">
+                    Acompanhar execução
+                  </button>
+                )}
+                {selected.status === 'FAILED' && (
+                  <p className="session-failed-note">
+                    Registros anteriores podem permanecer disponíveis, mas não haverá nova aquisição automática.
+                  </p>
+                )}
+                <button className="button-secondary" onClick={() => openCreate(selected)} type="button">
+                  Usar como modelo
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {view === 'create' && (
+        <section className="sessions-panel create-panel">
+          <div className="sessions-panel-heading">
+            <div>
+              <p className="sessions-kicker">Nova aquisição</p>
+              <h3>Configurar sessão</h3>
+            </div>
+            <button className="button-secondary" onClick={() => setView('history')} type="button">Cancelar</button>
+          </div>
+
+          <div className="session-form-grid">
+            <label>Veículo<input value={vehicle} onChange={(event) => setVehicle(event.target.value)} placeholder="Ex.: Gol 1.6 — 2018" /></label>
+            <label>Descrição ou motivo da aquisição<textarea value={startReason} onChange={(event) => setStartReason(event.target.value)} placeholder="Ex.: investigar oscilação em marcha lenta" /></label>
+            <label>Intervalo (ms)<input type="number" min="1" value={intervalMs} onChange={(event) => setIntervalMs(Number(event.target.value))} /></label>
+            <label>Duração máxima (ms)<input type="number" min="1" value={maxDurationMs} onChange={(event) => setMaxDurationMs(Number(event.target.value))} /></label>
+          </div>
+
+          <div className="pid-create-section">
+            <div className="sessions-panel-heading">
+              <div><p className="sessions-kicker">Parâmetros</p><h3>PIDs monitorados</h3></div>
+              <span className="selection-count">{selectedPids.length} selecionado(s)</span>
+            </div>
+            <div className="pid-create-grid">
+              {PID_OPTIONS.map((pid) => (
+                <label className="pid-create-option" key={pid.code}>
+                  <input type="checkbox" checked={selectedPids.includes(pid.code)} onChange={() => togglePid(pid.code)} />
+                  <code>{pid.code}</code>
+                  <span><strong>{pid.name}</strong><small>{pid.description}</small></span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <label className="trigger-toggle">
+            <input type="checkbox" checked={triggerEnabled} onChange={(event) => setTriggerEnabled(event.target.checked)} />
+            Configurar trigger opcional de encerramento
+          </label>
+
+          {triggerEnabled && (
+            <div className="trigger-grid">
+              <label>
+                PID
+                <select
+                  value={triggerPid}
+                  onChange={(event) => setTriggerPid(event.target.value)}
+                >
+                  {PID_OPTIONS.map((pid) => (
+                    <option key={pid.code} value={pid.code}>
+                      {pid.code} — {pid.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>Índice do valor<input type="number" min="0" value={triggerIndex} onChange={(event) => setTriggerIndex(Number(event.target.value))} /></label>
+              <label>Operador<select value={triggerOperator} onChange={(event) => setTriggerOperator(event.target.value as TriggerOperator)}><option value="GT">&gt;</option><option value="GTE">&gt;=</option><option value="LT">&lt;</option><option value="LTE">&lt;=</option><option value="EQ">=</option></select></label>
+              <label>Valor<input type="number" value={triggerValue} onChange={(event) => setTriggerValue(Number(event.target.value))} /></label>
+            </div>
+          )}
+
+          <button className="button-primary create-submit" disabled={loading} onClick={() => void handleCreate()} type="button">
+            {loading ? 'Criando…' : 'Criar sessão'}
+          </button>
+        </section>
+      )}
+
+      {view === 'running' && selected && (
+        <div className="running-layout">
+          <section className="sessions-panel running-summary">
+            <div className="running-heading">
+              <div><span className="running-label"><i /> Sessão em execução</span><h3>{selected.vehicle}</h3></div>
+              <button className="button-secondary" disabled={loading} onClick={() => void handleStop()} type="button">Encerrar aquisição</button>
+            </div>
+            <div className="running-metrics">
+              <div><span>Tempo decorrido</span><strong>{formatDuration(elapsedMs)}</strong></div>
+              <div><span>Duração máxima</span><strong>{formatDuration(selected.maxDurationMs)}</strong></div>
+              <div><span>Intervalo</span><strong>{selected.intervalMs} ms</strong></div>
+              <div><span>Última atualização</span><strong>{logs.length ? formatDate(logs.at(-1)?.timestamp ?? null) : 'Aguardando registros'}</strong></div>
+            </div>
+            <p className="running-pids">PIDs: {[...pidGroups.keys()].join(', ') || 'Aguardando primeiros registros'}</p>
+          </section>
+
+          <section className="sessions-panel running-values">
+            <div className="sessions-panel-heading"><div><p className="sessions-kicker">Dados recebidos</p><h3>Valores atuais</h3></div><span className="selection-count">{logs.length} registros</span></div>
+            {pidGroups.size === 0 ? <div className="sessions-empty compact"><span>—</span><p>Aguardando telemetria real do backend.</p></div> : (
+              <div className="value-card-grid">
+                {[...pidGroups.entries()].map(([pid, records]) => {
+                  const latest = records.at(-1)!
+                  const values = records.map((record) => record.value).filter((value): value is number => value !== null)
+                  return (
+                    <article className="value-card" key={pid}>
+                      <code>{pid}</code>
+                      <strong>{latest.value ?? '—'} <span>{latest.unit}</span></strong>
+                      <small>{latest.valueName}</small>
+                      {values.length > 0 && <div className="value-extremes"><span>Mín. {Math.min(...values)}{latest.unit}</span><span>Máx. {Math.max(...values)}{latest.unit}</span></div>}
+                      <time>{formatDate(latest.timestamp)}</time>
+                    </article>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {view === 'explore' && selected && (
+        <div className="explore-layout">
+          <section className="sessions-panel explore-toolbar">
+            <div><p className="sessions-kicker">Sessão #{selected.sessionId}</p><h3>{selected.vehicle}</h3></div>
+            <div className="explore-controls">
+              <label>PID individual<select value={chartPid} onChange={(event) => setChartPid(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label>
+              <button className="button-secondary" onClick={() => void loadAllLogs(selected.sessionId).then(setLogs)} type="button">Atualizar dados</button>
+            </div>
+          </section>
+
+          {logs.length === 0 ? (
+            <section className="sessions-panel sessions-empty compact"><span>—</span><p>Esta sessão não possui registros de telemetria.</p></section>
+          ) : (
+            <>
+              <section className="sessions-panel chart-panel">
+                <div className="sessions-panel-heading"><div><p className="sessions-kicker">Gráfico individual</p><h3>{chartPid}</h3></div></div>
+                <div className="chart-area">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartRecords}>
+                      <CartesianGrid stroke="rgba(183,205,214,.09)" />
+                      <XAxis dataKey="timestamp" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(value) => new Date(value).toLocaleTimeString('pt-BR')} />
+                      <YAxis />
+                      <Tooltip labelFormatter={(value) => formatDate(new Date(Number(value)).toISOString())} />
+                      <Legend />
+                      <Line type="monotone" dataKey="value" name={chartPid} stroke="#61d6bd" dot={false} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section className="sessions-panel overlaid-panel">
+                <div className="sessions-panel-heading"><div><p className="sessions-kicker">Sobreposição</p><h3>PIDs visíveis</h3></div></div>
+                <div className="pid-toggle-list">
+                  {pidOptions.map((pid) => <label key={pid}><input type="checkbox" checked={visiblePids.includes(pid)} onChange={() => setVisiblePids((current) => current.includes(pid) ? current.filter((item) => item !== pid) : [...current, pid])} />{pid}</label>)}
+                </div>
+                <div className="chart-area">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart>
+                      <CartesianGrid stroke="rgba(183,205,214,.09)" />
+                      <XAxis dataKey="timestamp" type="number" allowDuplicatedCategory={false} domain={['dataMin', 'dataMax']} tickFormatter={(value) => new Date(value).toLocaleTimeString('pt-BR')} />
+                      <YAxis yAxisId="left" />
+                      <Tooltip />
+                      <Legend />
+                      {visiblePids.map((pid, index) => (
+                        <Line key={pid} yAxisId="left" data={(pidGroups.get(pid) ?? []).map((log) => ({ timestamp: new Date(log.timestamp).getTime(), value: log.value }))} type="monotone" dataKey="value" name={pid} stroke={index % 2 ? '#f3c779' : '#61d6bd'} dot={false} isAnimationActive={false} />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section className="sessions-panel stats-panel">
+                <div className="sessions-panel-heading"><div><p className="sessions-kicker">Estatística descritiva</p><h3>Resumo por PID</h3></div></div>
+                <div className="stats-table-wrap"><table className="stats-table"><thead><tr><th>PID</th><th>Média</th><th>Mediana</th><th>Mín.</th><th>Máx.</th><th>Desvio padrão</th><th>Amostras</th></tr></thead><tbody>{statistics.map((stat) => <tr key={stat.pid}><td><code>{stat.pid}</code></td><td>{stat.average?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.median?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.min?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.max?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.deviation?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.count}</td></tr>)}</tbody></table></div>
+              </section>
+
+              <section className="sessions-panel correlation-panel">
+                <div className="sessions-panel-heading"><div><p className="sessions-kicker">Correlação temporal</p><h3>Dispersão entre parâmetros</h3></div></div>
+                <div className="correlation-controls"><label>Eixo X<select value={scatterX} onChange={(event) => setScatterX(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label><label>Eixo Y<select value={scatterY} onChange={(event) => setScatterY(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label></div>
+                <p className="correlation-value">Correlação de Pearson: <strong>{correlation === null ? 'indisponível' : correlation.toFixed(3)}</strong></p>
+                {scatterRecords.length < 2 ? <div className="sessions-empty compact"><span>—</span><p>Não há amostras correspondentes temporalmente.</p></div> : <div className="chart-area scatter-area"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="rgba(183,205,214,.09)" /><XAxis dataKey="x" name={scatterX} type="number" /><YAxis dataKey="y" name={scatterY} type="number" /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter name={`${scatterX} × ${scatterY}`} data={scatterRecords} fill="#61d6bd" /></ScatterChart></ResponsiveContainer></div>}
+                <p className="correlation-note">A correlação indica associação temporal; não representa causalidade ou diagnóstico conclusivo.</p>
+              </section>
+
+              <section className="sessions-panel ai-panel">
+                <div className="sessions-panel-heading"><div><p className="sessions-kicker">Análise inteligente</p><h3>Resultado do backend</h3></div><button className="button-primary" disabled={aiLoading} onClick={() => void handleAnalyse()} type="button">{aiLoading ? 'Analisando…' : 'Solicitar análise'}</button></div>
+                {aiLoading && <p className="sessions-status">Consultando o serviço de análise…</p>}
+                {aiError && <p className="sessions-error" role="alert">{aiError}</p>}
+                {!aiLoading && aiResult && <article className="ai-result"><p>{aiResult}</p></article>}
+              </section>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
