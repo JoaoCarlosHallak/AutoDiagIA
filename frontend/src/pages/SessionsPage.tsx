@@ -4,6 +4,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -111,6 +112,8 @@ export function SessionsPage() {
   const [scatterY, setScatterY] = useState('')
   const [exploreMode, setExploreMode] = useState<ExploreMode>('dashboard')
   const [runningMode, setRunningMode] = useState<RunningMode>('cards')
+  const [lowerLimit, setLowerLimit] = useState('')
+  const [upperLimit, setUpperLimit] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiResult, setAiResult] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
@@ -227,17 +230,54 @@ export function SessionsPage() {
     [pidGroups],
   )
 
+  const minReference = lowerLimit.trim() === '' ? null : Number(lowerLimit)
+  const maxReference = upperLimit.trim() === '' ? null : Number(upperLimit)
+  const referenceRangeInvalid =
+    minReference !== null &&
+    maxReference !== null &&
+    minReference > maxReference
+
+  const referenceLimitEvents = useMemo(() => {
+    if (referenceRangeInvalid) return []
+    return (pidGroups.get(chartPid) ?? []).filter((log) => {
+      if (log.value === null) return false
+      return (minReference !== null && Number.isFinite(minReference) && log.value < minReference) ||
+        (maxReference !== null && Number.isFinite(maxReference) && log.value > maxReference)
+    })
+  }, [chartPid, maxReference, minReference, pidGroups, referenceRangeInvalid])
+
+  const dataSummary = useMemo(() => {
+    const validValues = logs.filter((log) => log.value !== null).length
+    const duration = logs.length > 1
+      ? new Date(logs[logs.length - 1].timestamp).getTime() -
+        new Date(logs[0].timestamp).getTime()
+      : 0
+    return {
+      records: logs.length,
+      pids: pidGroups.size,
+      missingValues: logs.length - validValues,
+      duration,
+    }
+  }, [logs, pidGroups])
+
   useEffect(() => {
     if (pidOptions.length === 0) return
     if (!chartPid) setChartPid(pidOptions[0])
     if (visiblePids.length === 0) setVisiblePids(pidOptions)
   }, [pidOptions, chartPid, visiblePids])
 
+  useEffect(() => {
+    setLowerLimit('')
+    setUpperLimit('')
+  }, [chartPid])
+
   async function selectSession(session: SessionDTO) {
     setLoading(true)
     setError(null)
     setAiResult('')
     setAiError(null)
+    setLowerLimit('')
+    setUpperLimit('')
     try {
       const fresh = await getSession(session.sessionId)
       setSelected(fresh)
@@ -337,6 +377,8 @@ export function SessionsPage() {
       const started = await startSession(selected.sessionId)
       setSelected(started)
       setLogs([])
+      setLowerLimit('')
+      setUpperLimit('')
       setRunningMode('cards')
       setView('running')
       await refreshSessions()
@@ -480,6 +522,75 @@ export function SessionsPage() {
     link.download = `sessao-${selected?.sessionId ?? 'dados'}.csv`
     link.click()
     URL.revokeObjectURL(url)
+  }
+
+  function renderCollectionInsights() {
+    return (
+      <>
+        <section className="collection-summary">
+          <div><span>Registros</span><strong>{dataSummary.records}</strong></div>
+          <div><span>PIDs coletados</span><strong>{dataSummary.pids}</strong></div>
+          <div><span>Valores ausentes</span><strong>{dataSummary.missingValues}</strong></div>
+          <div><span>Período registrado</span><strong>{formatDuration(dataSummary.duration)}</strong></div>
+        </section>
+
+        <section className="sessions-panel reference-panel">
+          <div className="sessions-panel-heading">
+            <div>
+              <p className="sessions-kicker">Referência manual</p>
+              <h3>Marcar valores fora dos limites definidos</h3>
+            </div>
+            <span className="selection-count">{referenceLimitEvents.length} ocorrência(s)</span>
+          </div>
+          <p className="reference-note">
+            Defina limites de acordo com a especificação do veículo ou do teste.
+            Eles não são limites automotivos automáticos nem um diagnóstico.
+          </p>
+          <div className="reference-controls">
+            <label>
+              PID
+              <select value={chartPid} onChange={(event) => setChartPid(event.target.value)}>
+                {pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}
+              </select>
+            </label>
+            <label>
+              Mínimo{pidGroups.get(chartPid)?.[0]?.unit ? ` (${pidGroups.get(chartPid)?.[0]?.unit})` : ''}
+              <input type="number" value={lowerLimit} onChange={(event) => setLowerLimit(event.target.value)} placeholder="Opcional" />
+            </label>
+            <label>
+              Máximo{pidGroups.get(chartPid)?.[0]?.unit ? ` (${pidGroups.get(chartPid)?.[0]?.unit})` : ''}
+              <input type="number" value={upperLimit} onChange={(event) => setUpperLimit(event.target.value)} placeholder="Opcional" />
+            </label>
+          </div>
+          {referenceRangeInvalid && (
+            <p className="sessions-error" role="alert">O limite mínimo não pode ser maior que o máximo.</p>
+          )}
+          {referenceLimitEvents.length > 0 ? (
+            <ol className="reference-events">
+              {[...referenceLimitEvents].reverse().slice(0, 8).map((log) => (
+                <li key={log.id}>
+                  <time>{formatDate(log.timestamp)}</time>
+                  <strong>{log.value} {log.unit}</strong>
+                  <span>{minReference !== null && log.value !== null && log.value < minReference
+                    ? 'Abaixo do mínimo definido'
+                    : 'Acima do máximo definido'}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="reference-empty">
+              {pidOptions.length === 0
+                ? 'Aguardando registros para selecionar um PID.'
+                : referenceRangeInvalid
+                  ? 'Corrija os limites para consultar as ocorrências.'
+                  : minReference === null && maxReference === null
+                    ? 'Informe pelo menos um limite para destacar ocorrências.'
+                    : 'Nenhum registro fora dos limites informados.'}
+            </p>
+          )}
+        </section>
+      </>
+    )
   }
 
   return (
@@ -716,6 +827,8 @@ export function SessionsPage() {
                         <YAxis />
                         <Tooltip labelFormatter={(value) => formatDate(new Date(Number(value)).toISOString())} />
                         <Legend />
+                        {minReference !== null && Number.isFinite(minReference) && <ReferenceLine y={minReference} stroke="#f3c779" strokeDasharray="4 4" label="Mínimo definido" />}
+                        {maxReference !== null && Number.isFinite(maxReference) && <ReferenceLine y={maxReference} stroke="#e78174" strokeDasharray="4 4" label="Máximo definido" />}
                         <Line type="monotone" dataKey="value" name={chartPid} stroke="#61d6bd" dot={false} isAnimationActive={false} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -763,6 +876,7 @@ export function SessionsPage() {
               </>
             )}
           </section>
+          {renderCollectionInsights()}
         </div>
       )}
 
@@ -793,6 +907,7 @@ export function SessionsPage() {
             <section className="sessions-panel sessions-empty compact"><span>—</span><p>Esta sessão não possui registros de telemetria.</p></section>
           ) : (
             <>
+              {renderCollectionInsights()}
               {(exploreMode === 'dashboard' || exploreMode === 'individual') && <section className="sessions-panel chart-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Gráfico individual</p><h3>{chartPid}</h3></div></div>
                 <div className="chart-area">
@@ -803,6 +918,8 @@ export function SessionsPage() {
                       <YAxis />
                       <Tooltip labelFormatter={(value) => formatDate(new Date(Number(value)).toISOString())} />
                       <Legend />
+                      {minReference !== null && Number.isFinite(minReference) && <ReferenceLine y={minReference} stroke="#f3c779" strokeDasharray="4 4" label="Mínimo definido" />}
+                      {maxReference !== null && Number.isFinite(maxReference) && <ReferenceLine y={maxReference} stroke="#e78174" strokeDasharray="4 4" label="Máximo definido" />}
                       <Line type="monotone" dataKey="value" name={chartPid} stroke="#61d6bd" dot={false} isAnimationActive={false} />
                     </LineChart>
                   </ResponsiveContainer>
