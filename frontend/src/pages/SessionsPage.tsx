@@ -32,6 +32,15 @@ import { SectionHeading } from './SectionHeading'
 import './SessionsPage.css'
 
 type View = 'history' | 'create' | 'running' | 'explore'
+type ExploreMode =
+  | 'dashboard'
+  | 'individual'
+  | 'overlay'
+  | 'table'
+  | 'statistics'
+  | 'correlation'
+  | 'ai'
+type RunningMode = 'cards' | 'individual' | 'overlay' | 'table'
 
 const STATUS_LABEL: Record<SessionDTO['status'], string> = {
   CREATED: 'Criada',
@@ -100,6 +109,8 @@ export function SessionsPage() {
   const [chartPid, setChartPid] = useState('')
   const [scatterX, setScatterX] = useState('')
   const [scatterY, setScatterY] = useState('')
+  const [exploreMode, setExploreMode] = useState<ExploreMode>('dashboard')
+  const [runningMode, setRunningMode] = useState<RunningMode>('cards')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiResult, setAiResult] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
@@ -216,6 +227,12 @@ export function SessionsPage() {
     [pidGroups],
   )
 
+  useEffect(() => {
+    if (pidOptions.length === 0) return
+    if (!chartPid) setChartPid(pidOptions[0])
+    if (visiblePids.length === 0) setVisiblePids(pidOptions)
+  }, [pidOptions, chartPid, visiblePids])
+
   async function selectSession(session: SessionDTO) {
     setLoading(true)
     setError(null)
@@ -234,6 +251,7 @@ export function SessionsPage() {
         setChartPid(pids[0] ?? '')
         setScatterX(pids[0] ?? '')
         setScatterY(pids[1] ?? pids[0] ?? '')
+        setExploreMode('dashboard')
         setView('explore')
       }
       if (fresh.status === 'FAILED') setView('history')
@@ -319,6 +337,7 @@ export function SessionsPage() {
       const started = await startSession(selected.sessionId)
       setSelected(started)
       setLogs([])
+      setRunningMode('cards')
       setView('running')
       await refreshSessions()
     } catch (caught) {
@@ -438,6 +457,30 @@ export function SessionsPage() {
       }
     })
   }, [pidGroups, visiblePids])
+
+  function downloadLogsCsv() {
+    const header = ['timestamp', 'pid', 'value_name', 'value', 'unit']
+    const rows = logs.map((log) => [
+      log.timestamp,
+      log.pid,
+      log.valueName,
+      log.value ?? '',
+      log.unit,
+    ])
+    const escapeCsv = (value: string | number) =>
+      `"${String(value).replaceAll('"', '""')}"`
+    const csv = [header, ...rows]
+      .map((row) => row.map(escapeCsv).join(','))
+      .join('\n')
+    const url = URL.createObjectURL(
+      new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
+    )
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `sessao-${selected?.sessionId ?? 'dados'}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <>
@@ -617,23 +660,107 @@ export function SessionsPage() {
           </section>
 
           <section className="sessions-panel running-values">
-            <div className="sessions-panel-heading"><div><p className="sessions-kicker">Dados recebidos</p><h3>Valores atuais</h3></div><span className="selection-count">{logs.length} registros</span></div>
-            {pidGroups.size === 0 ? <div className="sessions-empty compact"><span>—</span><p>Aguardando telemetria real do backend.</p></div> : (
-              <div className="value-card-grid">
-                {[...pidGroups.entries()].map(([pid, records]) => {
-                  const latest = records.at(-1)!
-                  const values = records.map((record) => record.value).filter((value): value is number => value !== null)
-                  return (
-                    <article className="value-card" key={pid}>
-                      <code>{pid}</code>
-                      <strong>{latest.value ?? '—'} <span>{latest.unit}</span></strong>
-                      <small>{latest.valueName}</small>
-                      {values.length > 0 && <div className="value-extremes"><span>Mín. {Math.min(...values)}{latest.unit}</span><span>Máx. {Math.max(...values)}{latest.unit}</span></div>}
-                      <time>{formatDate(latest.timestamp)}</time>
-                    </article>
-                  )
-                })}
+            <div className="running-values-heading">
+              <div><p className="sessions-kicker">Dados recebidos</p><h3>Visualização ao vivo</h3></div>
+              <div className="running-view-controls">
+                <label>
+                  Forma de visualizar
+                  <select value={runningMode} onChange={(event) => setRunningMode(event.target.value as RunningMode)}>
+                    <option value="cards">Valores atuais</option>
+                    <option value="individual">Gráfico individual</option>
+                    <option value="overlay">PIDs sobrepostos</option>
+                    <option value="table">Tabela de registros</option>
+                  </select>
+                </label>
+                {(runningMode === 'individual' || runningMode === 'overlay') && (
+                  <label>
+                    PID
+                    <select value={chartPid} onChange={(event) => setChartPid(event.target.value)}>
+                      {pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}
+                    </select>
+                  </label>
+                )}
+                <button className="button-secondary" onClick={downloadLogsCsv} type="button" disabled={logs.length === 0}>Exportar CSV</button>
               </div>
+              <span className="selection-count">{logs.length} registros</span>
+            </div>
+
+            {pidGroups.size === 0 ? (
+              <div className="sessions-empty compact"><span>—</span><p>Aguardando telemetria real do backend.</p></div>
+            ) : (
+              <>
+                {runningMode === 'cards' && (
+                  <div className="value-card-grid">
+                    {[...pidGroups.entries()].map(([pid, records]) => {
+                      const latest = records.at(-1)!
+                      const values = records.map((record) => record.value).filter((value): value is number => value !== null)
+                      return (
+                        <article className="value-card" key={pid}>
+                          <code>{pid}</code>
+                          <strong>{latest.value ?? '—'} <span>{latest.unit}</span></strong>
+                          <small>{latest.valueName}</small>
+                          {values.length > 0 && <div className="value-extremes"><span>Mín. {Math.min(...values)}{latest.unit}</span><span>Máx. {Math.max(...values)}{latest.unit}</span></div>}
+                          <time>{formatDate(latest.timestamp)}</time>
+                        </article>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {runningMode === 'individual' && (
+                  <div className="chart-area">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartRecords}>
+                        <CartesianGrid stroke="rgba(183,205,214,.09)" />
+                        <XAxis dataKey="timestamp" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(value) => new Date(value).toLocaleTimeString('pt-BR')} />
+                        <YAxis />
+                        <Tooltip labelFormatter={(value) => formatDate(new Date(Number(value)).toISOString())} />
+                        <Legend />
+                        <Line type="monotone" dataKey="value" name={chartPid} stroke="#61d6bd" dot={false} isAnimationActive={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {runningMode === 'overlay' && (
+                  <>
+                    <div className="pid-toggle-list">
+                      {pidOptions.map((pid) => <label key={pid}><input type="checkbox" checked={visiblePids.includes(pid)} onChange={() => setVisiblePids((current) => current.includes(pid) ? current.filter((item) => item !== pid) : [...current, pid])} />{pid}</label>)}
+                    </div>
+                    <div className="chart-area">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart>
+                          <CartesianGrid stroke="rgba(183,205,214,.09)" />
+                          <XAxis dataKey="timestamp" type="number" allowDuplicatedCategory={false} domain={['dataMin', 'dataMax']} tickFormatter={(value) => new Date(value).toLocaleTimeString('pt-BR')} />
+                          <YAxis yAxisId="left" />
+                          <Tooltip />
+                          <Legend />
+                          {visiblePids.map((pid, index) => (
+                            <Line key={pid} yAxisId="left" data={(pidGroups.get(pid) ?? []).map((log) => ({ timestamp: new Date(log.timestamp).getTime(), value: log.value }))} type="monotone" dataKey="value" name={pid} stroke={index % 2 ? '#f3c779' : '#61d6bd'} dot={false} isAnimationActive={false} />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </>
+                )}
+
+                {runningMode === 'table' && (
+                  <div className="raw-data-table-wrap">
+                    <table className="raw-data-table">
+                      <thead><tr><th>Data e hora</th><th>PID</th><th>Parâmetro</th><th>Valor</th><th>Unidade</th></tr></thead>
+                      <tbody>{logs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{formatDate(log.timestamp)}</td>
+                          <td><code>{log.pid}</code></td>
+                          <td>{log.valueName}</td>
+                          <td>{log.value ?? '—'}</td>
+                          <td>{log.unit}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
@@ -644,8 +771,21 @@ export function SessionsPage() {
           <section className="sessions-panel explore-toolbar">
             <div><p className="sessions-kicker">Sessão #{selected.sessionId}</p><h3>{selected.vehicle}</h3></div>
             <div className="explore-controls">
+              <label>
+                Forma de visualizar
+                <select value={exploreMode} onChange={(event) => setExploreMode(event.target.value as ExploreMode)}>
+                  <option value="dashboard">Visão geral</option>
+                  <option value="individual">Gráfico individual</option>
+                  <option value="overlay">PIDs sobrepostos</option>
+                  <option value="table">Tabela de registros</option>
+                  <option value="statistics">Estatísticas</option>
+                  <option value="correlation">Dispersão e correlação</option>
+                  <option value="ai">Análise inteligente</option>
+                </select>
+              </label>
               <label>PID individual<select value={chartPid} onChange={(event) => setChartPid(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label>
               <button className="button-secondary" onClick={() => void loadAllLogs(selected.sessionId).then(setLogs)} type="button">Atualizar dados</button>
+              <button className="button-secondary" onClick={downloadLogsCsv} type="button">Exportar CSV</button>
             </div>
           </section>
 
@@ -653,7 +793,7 @@ export function SessionsPage() {
             <section className="sessions-panel sessions-empty compact"><span>—</span><p>Esta sessão não possui registros de telemetria.</p></section>
           ) : (
             <>
-              <section className="sessions-panel chart-panel">
+              {(exploreMode === 'dashboard' || exploreMode === 'individual') && <section className="sessions-panel chart-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Gráfico individual</p><h3>{chartPid}</h3></div></div>
                 <div className="chart-area">
                   <ResponsiveContainer width="100%" height="100%">
@@ -667,9 +807,9 @@ export function SessionsPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-              </section>
+              </section>}
 
-              <section className="sessions-panel overlaid-panel">
+              {(exploreMode === 'dashboard' || exploreMode === 'overlay') && <section className="sessions-panel overlaid-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Sobreposição</p><h3>PIDs visíveis</h3></div></div>
                 <div className="pid-toggle-list">
                   {pidOptions.map((pid) => <label key={pid}><input type="checkbox" checked={visiblePids.includes(pid)} onChange={() => setVisiblePids((current) => current.includes(pid) ? current.filter((item) => item !== pid) : [...current, pid])} />{pid}</label>)}
@@ -688,27 +828,50 @@ export function SessionsPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-              </section>
+              </section>}
 
-              <section className="sessions-panel stats-panel">
+              {exploreMode === 'table' && (
+                <section className="sessions-panel raw-data-panel">
+                  <div className="sessions-panel-heading">
+                    <div><p className="sessions-kicker">Dados brutos</p><h3>Registros da sessão</h3></div>
+                    <span className="selection-count">{logs.length} registros</span>
+                  </div>
+                  <div className="raw-data-table-wrap">
+                    <table className="raw-data-table">
+                      <thead><tr><th>Data e hora</th><th>PID</th><th>Parâmetro</th><th>Valor</th><th>Unidade</th></tr></thead>
+                      <tbody>{logs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{formatDate(log.timestamp)}</td>
+                          <td><code>{log.pid}</code></td>
+                          <td>{log.valueName}</td>
+                          <td>{log.value ?? '—'}</td>
+                          <td>{log.unit}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+
+              {(exploreMode === 'dashboard' || exploreMode === 'statistics') && <section className="sessions-panel stats-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Estatística descritiva</p><h3>Resumo por PID</h3></div></div>
                 <div className="stats-table-wrap"><table className="stats-table"><thead><tr><th>PID</th><th>Média</th><th>Mediana</th><th>Mín.</th><th>Máx.</th><th>Desvio padrão</th><th>Amostras</th></tr></thead><tbody>{statistics.map((stat) => <tr key={stat.pid}><td><code>{stat.pid}</code></td><td>{stat.average?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.median?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.min?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.max?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.deviation?.toFixed(2) ?? '—'} {stat.unit}</td><td>{stat.count}</td></tr>)}</tbody></table></div>
-              </section>
+              </section>}
 
-              <section className="sessions-panel correlation-panel">
+              {(exploreMode === 'dashboard' || exploreMode === 'correlation') && <section className="sessions-panel correlation-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Correlação temporal</p><h3>Dispersão entre parâmetros</h3></div></div>
                 <div className="correlation-controls"><label>Eixo X<select value={scatterX} onChange={(event) => setScatterX(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label><label>Eixo Y<select value={scatterY} onChange={(event) => setScatterY(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label></div>
                 <p className="correlation-value">Correlação de Pearson: <strong>{correlation === null ? 'indisponível' : correlation.toFixed(3)}</strong></p>
                 {scatterRecords.length < 2 ? <div className="sessions-empty compact"><span>—</span><p>Não há amostras correspondentes temporalmente.</p></div> : <div className="chart-area scatter-area"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid stroke="rgba(183,205,214,.09)" /><XAxis dataKey="x" name={scatterX} type="number" /><YAxis dataKey="y" name={scatterY} type="number" /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter name={`${scatterX} × ${scatterY}`} data={scatterRecords} fill="#61d6bd" /></ScatterChart></ResponsiveContainer></div>}
                 <p className="correlation-note">A correlação indica associação temporal; não representa causalidade ou diagnóstico conclusivo.</p>
-              </section>
+              </section>}
 
-              <section className="sessions-panel ai-panel">
+              {(exploreMode === 'dashboard' || exploreMode === 'ai') && <section className="sessions-panel ai-panel">
                 <div className="sessions-panel-heading"><div><p className="sessions-kicker">Análise inteligente</p><h3>Resultado do backend</h3></div><button className="button-primary" disabled={aiLoading} onClick={() => void handleAnalyse()} type="button">{aiLoading ? 'Analisando…' : 'Solicitar análise'}</button></div>
                 {aiLoading && <p className="sessions-status">Consultando o serviço de análise…</p>}
                 {aiError && <p className="sessions-error" role="alert">{aiError}</p>}
                 {!aiLoading && aiResult && <article className="ai-result"><p>{aiResult}</p></article>}
-              </section>
+              </section>}
             </>
           )}
         </div>
