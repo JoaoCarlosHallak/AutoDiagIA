@@ -5,9 +5,28 @@ interface SidebarProps {
   onSectionChange: (section: SectionId) => void
 }
 
-const sectionIds: SectionId[] = ['telemetry', 'sessions', 'dtc']
+const sectionIds: SectionId[] = ['overview', 'telemetry', 'sessions', 'dtc']
 
 function SectionIcon({ section }: { section: SectionId }) {
+  if (section === 'overview') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="m4 14 1.4-5.1a2 2 0 0 1 1.9-1.5h9.4a2 2 0 0 1 1.9 1.5L20 14v4h-2v-2H6v2H4v-4Z"
+          stroke="currentColor"
+          strokeLinejoin="round"
+          strokeWidth="1.6"
+        />
+        <path
+          d="M5 13h14M7.5 10.5h.01M16.5 10.5h.01"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="1.6"
+        />
+      </svg>
+    )
+  }
+
   if (section === 'telemetry') {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -106,11 +125,12 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             <span className="nav-copy">
               <span className="nav-title">{SECTION_CONTENT[section].label}</span>
               <span className="nav-description">
-                {section === 'telemetry'
-                  ? 'Dados do veículo'
-                  : section === 'sessions'
-                    ? 'Coleta e histórico'
-                    : 'Códigos de falha'}
+                {{
+                  overview: 'Mapa do veículo',
+                  telemetry: 'Dados do veículo',
+                  sessions: 'Coleta e histórico',
+                  dtc: 'Códigos de falha',
+                }[section]}
               </span>
             </span>
           </button>

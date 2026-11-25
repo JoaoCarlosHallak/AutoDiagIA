@@ -5,6 +5,7 @@ import { TelemetryPage } from './pages/TelemetryPage'
 import { DtcPage } from './pages/DtcPage'
 import { SessionsPage } from './pages/SessionsPage'
 import { SectionPlaceholder } from './pages/SectionPlaceholder'
+import { OverviewPage } from './pages/OverviewPage'
 import { type SectionId } from './sections'
 import './App.css'
 
@@ -22,6 +23,8 @@ function App() {
         <main className="page-content" id="main-content">
           {activeSection === 'telemetry' ? (
             <TelemetryPage />
+          ) : activeSection === 'overview' ? (
+            <OverviewPage />
           ) : activeSection === 'dtc' ? (
             <DtcPage />
           ) : activeSection === 'sessions' ? (

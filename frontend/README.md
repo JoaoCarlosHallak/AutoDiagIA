@@ -41,5 +41,16 @@ não é salvo e desaparece ao recarregar ou sair da página.
 O endpoint de coleta periódica do backend não é usado nesta tela, pois não
 disponibiliza as amostras coletadas à interface.
 
+## Visão geral do veículo
+
+A seção “Visão geral” apresenta um modelo 3D genérico que pode ser girado com o
+mouse e possui carroceria translúcida para mostrar componentes como sondas
+lambda, catalisadores, sensores e ECU. A seleção de uma peça ou da lista
+acessível permite consultar PIDs relacionados pelo endpoint
+`GET /telemetry/pid?name={codigo}`.
+Resultados e erros permanecem apenas no estado da página; essa consulta não
+cria sessões nem persiste leituras. Os 46 PIDs do catálogo têm posições
+associadas a componentes ou sistemas do veículo.
+
 O catálogo de PIDs selecionáveis espelha o enum `ObdPid` do backend e deve ser
 atualizado quando esse enum mudar.

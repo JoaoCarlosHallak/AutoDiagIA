@@ -1,4 +1,4 @@
-export type SectionId = 'telemetry' | 'sessions' | 'dtc'
+export type SectionId = 'overview' | 'telemetry' | 'sessions' | 'dtc'
 
 export interface SectionContent {
   label: string
@@ -9,6 +9,15 @@ export interface SectionContent {
 }
 
 export const SECTION_CONTENT: Record<SectionId, SectionContent> = {
+  overview: {
+    label: 'Visão geral',
+    description:
+      'Explore os sistemas do veículo e consulte os PIDs diretamente no modelo 3D.',
+    placeholderTitle: 'Visão geral do veículo',
+    placeholderDescription:
+      'Explore os pontos do modelo e faça consultas individuais de telemetria.',
+    note: 'As leituras são feitas sob demanda e não são persistidas.',
+  },
   telemetry: {
     label: 'Telemetria',
     description: 'Leituras e parâmetros do veículo em um só lugar.',
