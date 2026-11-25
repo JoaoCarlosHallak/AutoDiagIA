@@ -119,6 +119,20 @@
 .sessions-error { margin: 0 0 12px; padding: 10px 12px; border: 1px solid rgb(231 129 116 / 25%); border-radius: 7px; background: rgb(231 129 116 / 7%); color: #efb0a7; font-size: 11px; }
 
 .create-panel { max-width: 850px; }
+.session-template-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-top: 16px; }
+.session-template-picker > label,
+.session-template-editor > label:first-child { display: grid; gap: 7px; color: var(--text-secondary); font-size: 10px; }
+.session-template-picker select,
+.session-template-editor input[type="text"],
+.session-template-editor input:not([type]) { width: 100%; min-height: 36px; padding: 8px 9px; border: 1px solid var(--border-subtle); border-radius: 7px; outline: 0; background: rgb(4 9 13 / 42%); color: var(--text-primary); font: inherit; font-size: 11px; }
+.session-template-picker small { color: var(--text-muted); line-height: 1.5; }
+.session-template-actions { display: grid; justify-items: stretch; gap: 7px; }
+.session-template-actions button { min-height: 36px; }
+.session-template-actions .template-delete { color: #efb0a7; }
+.session-template-editor { display: grid; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: 8px; background: rgb(4 9 13 / 20%); }
+.session-template-editor .trigger-toggle { margin-top: 0; }
+.session-template-editor .button-primary { justify-self: start; }
+.template-note { margin: 0; color: var(--text-muted); font-size: 10px; line-height: 1.5; }
 .session-form-grid,
 .trigger-grid {
   display: grid;
@@ -253,6 +267,8 @@
 }
 
 @media (max-width: 640px) {
+  .session-template-picker { grid-template-columns: 1fr; }
+  .session-template-actions { grid-template-columns: 1fr; }
   .session-form-grid,
   .trigger-grid,
   .pid-create-grid,

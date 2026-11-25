@@ -16,17 +16,22 @@ import { sampleCorrelation } from 'simple-statistics'
 import {
   analyseSession,
   createSession,
+  createSessionTemplate,
+  deleteSessionTemplate,
   getSession,
   getSessionLogs,
   listSessions,
+  listSessionTemplates,
   startSession,
   stopSession,
 } from '../api/sessionService'
 import { PID_OPTIONS } from '../data/obdPids'
+import { SESSION_TEMPLATE_PRESETS } from '../data/sessionTemplates'
 import type {
   CreateSessionRequest,
   LogDTO,
   SessionDTO,
+  SessionTemplateDTO,
   TriggerOperator,
 } from '../types/session'
 import { SectionHeading } from './SectionHeading'
@@ -129,6 +134,14 @@ export function SessionsPage() {
   const [triggerOperator, setTriggerOperator] =
     useState<TriggerOperator>('GTE')
   const [triggerValue, setTriggerValue] = useState(3000)
+  const [sessionTemplates, setSessionTemplates] = useState<SessionTemplateDTO[]>([])
+  const [templatesLoading, setTemplatesLoading] = useState(true)
+  const [templateError, setTemplateError] = useState<string | null>(null)
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState('')
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const [includeTemplateSettings, setIncludeTemplateSettings] = useState(true)
+  const [templateSaving, setTemplateSaving] = useState(false)
 
   async function refreshSessions() {
     setLoading(true)
@@ -165,6 +178,26 @@ export function SessionsPage() {
     }
 
     void loadInitialSessions()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadTemplates() {
+      try {
+        const result = await listSessionTemplates()
+        if (active) setSessionTemplates(result)
+      } catch (caught) {
+        if (active) setTemplateError(describeError(caught))
+      } finally {
+        if (active) setTemplatesLoading(false)
+      }
+    }
+
+    void loadTemplates()
     return () => {
       active = false
     }
@@ -303,6 +336,10 @@ export function SessionsPage() {
   }
 
   function openCreate(session?: SessionDTO) {
+    setSelectedTemplateKey('')
+    setTemplateEditorOpen(false)
+    setTemplateName('')
+    setTemplateError(null)
     if (session) {
       setVehicle(session.vehicle ?? '')
       setStartReason(session.startReason ?? '')
@@ -329,6 +366,88 @@ export function SessionsPage() {
       setTriggerEnabled(false)
     }
     setView('create')
+  }
+
+  function applySessionTemplate(key: string) {
+    setSelectedTemplateKey(key)
+    setTemplateError(null)
+    const template = SESSION_TEMPLATE_PRESETS.find((item) => item.key === key)
+      ?? sessionTemplates.find((item) => `custom:${item.templateId}` === key)
+    if (!template) return
+
+    setStartReason(template.startReason)
+    setSelectedPids([...template.pids])
+    if (template.includeSessionSettings) {
+      setIntervalMs(template.intervalMs ?? 1000)
+      setMaxDurationMs(template.maxDurationMs ?? 300000)
+      setTriggerEnabled(template.trigger !== null)
+      if (template.trigger) {
+        setTriggerPid(template.trigger.pid)
+        setTriggerIndex(template.trigger.valueIndex)
+        setTriggerOperator(template.trigger.operator)
+        setTriggerValue(template.trigger.triggerValue)
+      }
+    }
+  }
+
+  async function handleSaveTemplate() {
+    if (!templateName.trim() || !startReason.trim() || selectedPids.length === 0) {
+      setTemplateError('Informe o nome e o objetivo, e selecione pelo menos um PID.')
+      return
+    }
+    if (includeTemplateSettings && (intervalMs <= 0 || maxDurationMs <= 0)) {
+      setTemplateError('Intervalo e duração máxima do modelo devem ser positivos.')
+      return
+    }
+
+    setTemplateSaving(true)
+    setTemplateError(null)
+    try {
+      const saved = await createSessionTemplate({
+        name: templateName.trim(),
+        startReason: startReason.trim(),
+        pids: selectedPids,
+        includeSessionSettings: includeTemplateSettings,
+        intervalMs: includeTemplateSettings ? intervalMs : null,
+        maxDurationMs: includeTemplateSettings ? maxDurationMs : null,
+        trigger: includeTemplateSettings && triggerEnabled
+          ? {
+              pid: triggerPid,
+              valueIndex: triggerIndex,
+              operator: triggerOperator,
+              triggerValue,
+            }
+          : null,
+      })
+      setSessionTemplates((current) =>
+        [...current, saved].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+      )
+      setSelectedTemplateKey(`custom:${saved.templateId}`)
+      setTemplateName('')
+      setTemplateEditorOpen(false)
+    } catch (caught) {
+      setTemplateError(describeError(caught))
+    } finally {
+      setTemplateSaving(false)
+    }
+  }
+
+  async function handleDeleteSelectedTemplate() {
+    const template = sessionTemplates.find(
+      (item) => `custom:${item.templateId}` === selectedTemplateKey,
+    )
+    if (!template || !window.confirm(`Excluir o modelo "${template.name}"?`)) return
+
+    setTemplateError(null)
+    try {
+      await deleteSessionTemplate(template.templateId)
+      setSessionTemplates((current) =>
+        current.filter((item) => item.templateId !== template.templateId),
+      )
+      setSelectedTemplateKey('')
+    } catch (caught) {
+      setTemplateError(describeError(caught))
+    }
   }
 
   async function handleCreate() {
@@ -698,6 +817,98 @@ export function SessionsPage() {
             </div>
             <button className="button-secondary" onClick={() => setView('history')} type="button">Cancelar</button>
           </div>
+
+          <div className="session-template-picker">
+            <label>
+              Modelo por objetivo
+              <select
+                value={selectedTemplateKey}
+                onChange={(event) => applySessionTemplate(event.target.value)}
+              >
+                <option value="">Escolher um modelo…</option>
+                <optgroup label="Sugestões">
+                  {SESSION_TEMPLATE_PRESETS.map((template) => (
+                    <option key={template.key} value={template.key}>
+                      {template.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {sessionTemplates.length > 0 && (
+                  <optgroup label="Modelos salvos nesta instalação">
+                    {sessionTemplates.map((template) => (
+                      <option
+                        key={template.templateId}
+                        value={`custom:${template.templateId}`}
+                      >
+                        {template.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              <small>
+                Sugestões preenchem objetivo e PIDs. Modelos completos também aplicam
+                intervalo, duração e trigger salvo.
+              </small>
+            </label>
+            <div className="session-template-actions">
+              <button
+                className="button-secondary"
+                onClick={() => {
+                  setTemplateError(null)
+                  setTemplateEditorOpen((open) => !open)
+                }}
+                type="button"
+              >
+                Salvar configuração como modelo
+              </button>
+              {selectedTemplateKey.startsWith('custom:') && (
+                <button
+                  className="button-secondary template-delete"
+                  onClick={() => void handleDeleteSelectedTemplate()}
+                  type="button"
+                >
+                  Excluir modelo selecionado
+                </button>
+              )}
+            </div>
+          </div>
+          {templatesLoading && <p className="template-note" role="status">Carregando modelos salvos…</p>}
+          {templateError && <p className="sessions-error" role="alert">{templateError}</p>}
+          {templateEditorOpen && (
+            <div className="session-template-editor">
+              <label>
+                Nome do modelo
+                <input
+                  maxLength={120}
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="Ex.: Avaliação de marcha lenta"
+                />
+              </label>
+              <label className="trigger-toggle">
+                <input
+                  type="checkbox"
+                  checked={includeTemplateSettings}
+                  onChange={(event) => setIncludeTemplateSettings(event.target.checked)}
+                />
+                Salvar também intervalo, duração máxima e trigger opcional
+              </label>
+              <p className="template-note">
+                {includeTemplateSettings
+                  ? 'O modelo salvará as configurações atuais da sessão.'
+                  : 'O modelo salvará somente o objetivo e os PIDs; as demais configurações atuais serão mantidas ao selecioná-lo.'}
+              </p>
+              <button
+                className="button-primary"
+                disabled={templateSaving}
+                onClick={() => void handleSaveTemplate()}
+                type="button"
+              >
+                {templateSaving ? 'Salvando…' : 'Salvar modelo'}
+              </button>
+            </div>
+          )}
 
           <div className="session-form-grid">
             <label>Veículo<input value={vehicle} onChange={(event) => setVehicle(event.target.value)} placeholder="Ex.: Gol 1.6 — 2018" /></label>

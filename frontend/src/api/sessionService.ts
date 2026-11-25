@@ -4,6 +4,9 @@ import type {
   LogDTO,
   PageResponse,
   SessionDTO,
+  SessionTemplateDTO,
+  SessionTemplateFields,
+  TriggerConfig,
 } from '../types/session'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -32,12 +35,89 @@ function isLog(value: unknown): value is LogDTO {
   )
 }
 
+function isTriggerConfig(value: unknown): value is TriggerConfig | null {
+  if (value === null) return true
+  if (!isRecord(value)) return false
+  const operators = new Set<string>(['GT', 'GTE', 'LT', 'LTE', 'EQ'])
+  return (
+    typeof value.pid === 'string' &&
+    typeof value.valueIndex === 'number' &&
+    Number.isInteger(value.valueIndex) &&
+    value.valueIndex >= 0 &&
+    typeof value.operator === 'string' &&
+    operators.has(value.operator) &&
+    typeof value.triggerValue === 'number' &&
+    Number.isFinite(value.triggerValue)
+  )
+}
+
+function isSessionTemplate(value: unknown): value is SessionTemplateDTO {
+  return (
+    isRecord(value) &&
+    typeof value.templateId === 'number' &&
+    typeof value.name === 'string' &&
+    typeof value.startReason === 'string' &&
+    Array.isArray(value.pids) &&
+    value.pids.length > 0 &&
+    value.pids.every((pid) => typeof pid === 'string') &&
+    typeof value.includeSessionSettings === 'boolean' &&
+    (value.intervalMs === null ||
+      (typeof value.intervalMs === 'number' && Number.isFinite(value.intervalMs))) &&
+    (value.maxDurationMs === null ||
+      (typeof value.maxDurationMs === 'number' &&
+        Number.isFinite(value.maxDurationMs))) &&
+    isTriggerConfig(value.trigger)
+  )
+}
+
+function assertSessionTemplate(value: unknown): SessionTemplateDTO {
+  if (!isSessionTemplate(value)) {
+    throw new Error('A API retornou um formato inesperado para o modelo de sessão.')
+  }
+  return value
+}
+
 export async function listSessions(): Promise<SessionDTO[]> {
   const response = await requestApi('/session')
   if (!Array.isArray(response) || !response.every(isSession)) {
     throw new Error('A API retornou um formato inesperado para as sessões.')
   }
   return response
+}
+
+export async function listSessionTemplates(): Promise<SessionTemplateDTO[]> {
+  const response = await requestApi('/session/templates')
+  if (!Array.isArray(response)) {
+    throw new Error('A API retornou um formato inesperado para os modelos de sessão.')
+  }
+  return response.map(assertSessionTemplate)
+}
+
+export async function createSessionTemplate(
+  request: SessionTemplateFields,
+): Promise<SessionTemplateDTO> {
+  const response = await requestApi('/session/templates', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  return assertSessionTemplate(response)
+}
+
+export async function updateSessionTemplate(
+  id: number,
+  request: SessionTemplateFields,
+): Promise<SessionTemplateDTO> {
+  const response = await requestApi(`/session/templates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  return assertSessionTemplate(response)
+}
+
+export async function deleteSessionTemplate(id: number): Promise<void> {
+  await requestApi(`/session/templates/${id}`, { method: 'DELETE' })
 }
 
 export async function getSession(id: number): Promise<SessionDTO> {

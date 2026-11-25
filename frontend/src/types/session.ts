@@ -47,6 +47,24 @@ export interface CreateSessionRequest {
   trigger: TriggerConfig | null
 }
 
+export interface SessionTemplateFields {
+  name: string
+  startReason: string
+  pids: string[]
+  includeSessionSettings: boolean
+  intervalMs: number | null
+  maxDurationMs: number | null
+  trigger: TriggerConfig | null
+}
+
+export interface SessionTemplateDTO extends SessionTemplateFields {
+  templateId: number
+}
+
+export interface SessionTemplatePreset extends SessionTemplateFields {
+  key: string
+}
+
 export interface PageResponse<T> {
   content: T[]
   totalElements: number

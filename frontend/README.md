@@ -54,3 +54,13 @@ associadas a componentes ou sistemas do veículo.
 
 O catálogo de PIDs selecionáveis espelha o enum `ObdPid` do backend e deve ser
 atualizado quando esse enum mudar.
+
+## Modelos de sessão
+
+A tela de criação oferece sugestões por objetivo e permite salvar modelos
+personalizados. Os modelos simples aplicam objetivo e PIDs; os completos também
+salvam intervalo, duração máxima e, opcionalmente, o trigger. Modelos
+personalizados são compartilhados por todos os usuários da instalação, pois o
+projeto ainda não possui autenticação, e ficam no banco de dados. O backend usa
+`spring.jpa.hibernate.ddl-auto=update` para preservar os registros existentes e
+criar as tabelas dos modelos sem recriar o schema ao iniciar.
