@@ -20,6 +20,7 @@ import com.autodiag.AutoDiagIA.obd.ObdPid;
 import com.autodiag.AutoDiagIA.session.SessionStatus;
 import com.autodiag.AutoDiagIA.repository.SessionPidRepository;
 import com.autodiag.AutoDiagIA.repository.SessionRepository;
+import com.autodiag.AutoDiagIA.repository.LogRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -29,14 +30,16 @@ public class SessionServiceImpl implements SessionService {
 
     private final SessionRepository sessionRepository;
     private final SessionPidRepository sessionPidRepository;
+    private final LogRepository logRepository;
     private final ModelMapper modelMapper;
     private final SessionExecutionService sessionExecutionService;
 
 
     @Autowired
-    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService) {
+    public SessionServiceImpl(SessionRepository sessionRepository, SessionPidRepository sessionPidRepository, LogRepository logRepository, ModelMapper modelMapper, SessionExecutionService sessionExecutionService) {
         this.sessionRepository = sessionRepository;
         this.sessionPidRepository = sessionPidRepository;
+        this.logRepository = logRepository;
         this.modelMapper = modelMapper;
         this.sessionExecutionService = sessionExecutionService;
     }
@@ -181,6 +184,26 @@ public class SessionServiceImpl implements SessionService {
                 sessionRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sessão de id: " + id + " inexistente")),
                 SessionDTO.class);
 
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Sessão de id: " + id + " inexistente"
+                ));
+
+        if (session.getStatus() == SessionStatus.RUNNING) {
+            throw new InvalidOperationException(
+                    "Encerre a aquisição antes de excluir a sessão."
+            );
+        }
+
+        sessionExecutionService.cancelTask(id);
+        sessionPidRepository.deleteAllBySessionId(id);
+        logRepository.deleteAllBySessionId(id);
+        sessionRepository.delete(session);
     }
 
     private String toPidCode(String pid) {

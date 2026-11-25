@@ -52,6 +52,12 @@ public class SessionController {
         return new ResponseEntity<>(sessionService.findById(id), HttpStatus.OK);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSession(@PathVariable Long id) {
+        sessionService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/start/{id}")
     public ResponseEntity<SessionDTO> startSession(@PathVariable Long id) {
         return new ResponseEntity<>(sessionService.start(id), HttpStatus.CREATED);

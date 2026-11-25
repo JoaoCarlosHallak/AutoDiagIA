@@ -142,6 +142,10 @@ export async function createSession(
   return response
 }
 
+export async function deleteSession(id: number): Promise<void> {
+  await requestApi(`/session/${id}`, { method: 'DELETE' })
+}
+
 export async function startSession(id: number): Promise<SessionDTO> {
   const response = await requestApi(`/session/start/${id}`, { method: 'POST' })
   if (!isSession(response)) {

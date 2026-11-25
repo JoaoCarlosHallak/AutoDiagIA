@@ -13,4 +13,5 @@ public interface SessionService {
     SessionDTO stop(Long id);
     List<SessionDTO> findAll();
     SessionDTO findById(Long id);
+    void delete(Long id);
 }

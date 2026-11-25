@@ -17,6 +17,7 @@ import {
   analyseSession,
   createSession,
   createSessionTemplate,
+  deleteSession,
   deleteSessionTemplate,
   getSession,
   getSessionLogs,
@@ -109,6 +110,7 @@ export function SessionsPage() {
   const [view, setView] = useState<View>('history')
   const [logs, setLogs] = useState<LogDTO[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingSession, setDeletingSession] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [visiblePids, setVisiblePids] = useState<string[]>([])
@@ -523,6 +525,36 @@ export function SessionsPage() {
     }
   }
 
+  async function handleDeleteSelectedSession() {
+    if (!selected) return
+    if (selected.status === 'RUNNING') {
+      setError('Encerre a aquisição antes de excluir a sessão.')
+      return
+    }
+
+    const sessionId = selected.sessionId
+    const confirmed = window.confirm(
+      `Excluir a sessão #${sessionId} e todos os registros de telemetria associados? Essa ação não pode ser desfeita.`,
+    )
+    if (!confirmed) return
+
+    setDeletingSession(true)
+    setError(null)
+    try {
+      await deleteSession(sessionId)
+      setSessions((current) =>
+        current.filter((session) => session.sessionId !== sessionId),
+      )
+      setSelected(null)
+      setLogs([])
+      setView('history')
+    } catch (caught) {
+      setError(describeError(caught))
+    } finally {
+      setDeletingSession(false)
+    }
+  }
+
   async function handleAnalyse() {
     if (!selected) return
     setAiLoading(true)
@@ -802,6 +834,20 @@ export function SessionsPage() {
                 <button className="button-secondary" onClick={() => openCreate(selected)} type="button">
                   Usar como modelo
                 </button>
+                {selected.status === 'RUNNING' ? (
+                  <p className="session-delete-note">
+                    Encerre a aquisição antes de excluir esta sessão.
+                  </p>
+                ) : (
+                  <button
+                    className="button-secondary session-delete"
+                    disabled={deletingSession}
+                    onClick={() => void handleDeleteSelectedSession()}
+                    type="button"
+                  >
+                    {deletingSession ? 'Excluindo…' : 'Excluir sessão'}
+                  </button>
+                )}
               </div>
             </section>
           )}
@@ -1111,6 +1157,14 @@ export function SessionsPage() {
               <label>PID individual<select value={chartPid} onChange={(event) => setChartPid(event.target.value)}>{pidOptions.map((pid) => <option key={pid} value={pid}>{pid}</option>)}</select></label>
               <button className="button-secondary" onClick={() => void loadAllLogs(selected.sessionId).then(setLogs)} type="button">Atualizar dados</button>
               <button className="button-secondary" onClick={downloadLogsCsv} type="button">Exportar CSV</button>
+              <button
+                className="button-secondary session-delete"
+                disabled={deletingSession}
+                onClick={() => void handleDeleteSelectedSession()}
+                type="button"
+              >
+                {deletingSession ? 'Excluindo…' : 'Excluir sessão'}
+              </button>
             </div>
           </section>
 

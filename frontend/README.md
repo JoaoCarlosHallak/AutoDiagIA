@@ -64,3 +64,7 @@ personalizados são compartilhados por todos os usuários da instalação, pois 
 projeto ainda não possui autenticação, e ficam no banco de dados. O backend usa
 `spring.jpa.hibernate.ddl-auto=update` para preservar os registros existentes e
 criar as tabelas dos modelos sem recriar o schema ao iniciar.
+
+Sessões podem ser excluídas pelo painel de detalhes no histórico. A exclusão
+remove também os PIDs e registros de telemetria associados; sessões em execução
+precisam ser encerradas antes.

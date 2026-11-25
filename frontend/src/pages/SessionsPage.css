@@ -101,6 +101,8 @@
 .session-details dd { margin: 0; color: var(--text-secondary); font-size: 9px; text-align: right; }
 .session-detail-actions { display: grid; gap: 8px; }
 .session-failed-note { color: #efb0a7; font-size: 10px; line-height: 1.5; }
+.session-delete { border-color: rgb(231 129 116 / 35%); color: #efb0a7; }
+.session-delete-note { margin: 0; color: var(--text-muted); font-size: 10px; }
 
 .sessions-empty {
   display: grid;
