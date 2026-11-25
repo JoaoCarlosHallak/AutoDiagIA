@@ -13,22 +13,36 @@ class DTCResponseParserTest {
     @Test
     void deveDecodificarDtcsModo03() {
 
-        String response = "43 02 03 00 01 15";
+        String response = "43 03 01 01 71 04 20";
 
         DTCReading reading = DTCResponseParser.parse(response, "03");
 
         assertEquals("03", reading.mode());
         assertNotNull(reading.instant());
 
-        assertEquals(2, reading.codes().size());
-        assertEquals("P0300", reading.codes().get(0));
-        assertEquals("P0115", reading.codes().get(1));
+        assertEquals(3, reading.codes().size());
+        assertEquals("P0301", reading.codes().get(0));
+        assertEquals("P0171", reading.codes().get(1));
+        assertEquals("P0420", reading.codes().get(2));
+    }
+
+    @Test
+    void deveDecodificarDtcsModo07() {
+        DTCReading reading = DTCResponseParser.parse(
+                "47 01 33 04 42 01 13",
+                "07"
+        );
+
+        assertEquals(3, reading.codes().size());
+        assertEquals("P0133", reading.codes().get(0));
+        assertEquals("P0442", reading.codes().get(1));
+        assertEquals("P0113", reading.codes().get(2));
     }
 
     @Test
     void deveDecodificarOutrasCategorias() {
 
-        String response = "43 03 52 00 95 00 C1 00";
+        String response = "43 52 00 95 00 C1 00";
 
         DTCReading reading = DTCResponseParser.parse(response, "03");
 
@@ -41,9 +55,14 @@ class DTCResponseParserTest {
     @Test
     void deveInterpretarRespostaSemDtcs() {
 
-        String response = "43 00";
+        DTCReading reading = DTCResponseParser.parse("43", "03");
 
-        DTCReading reading = DTCResponseParser.parse(response, "03");
+        assertTrue(reading.codes().isEmpty());
+    }
+
+    @Test
+    void deveInterpretarRespostaPendenteSemDtcs() {
+        DTCReading reading = DTCResponseParser.parse("47", "07");
 
         assertTrue(reading.codes().isEmpty());
     }
@@ -51,7 +70,7 @@ class DTCResponseParserTest {
     @Test
     void deveIgnorarPaddingCan() {
 
-        String response = "43 01 03 00 00 00 00";
+        String response = "43 03 00 00 00 00 00";
 
         DTCReading reading = DTCResponseParser.parse(response, "03");
 
@@ -62,14 +81,15 @@ class DTCResponseParserTest {
     @Test
     void deveDecodificarDtcsPermanentesSemByteDeQuantidade() {
 
-        String response = "4A 03 00 01 15";
+        String response = "4A 04 20 03 01 01 71";
 
         DTCReading reading = DTCResponseParser.parse(response, "0A");
 
         assertEquals("0A", reading.mode());
-        assertEquals(2, reading.codes().size());
-        assertEquals("P0300", reading.codes().get(0));
-        assertEquals("P0115", reading.codes().get(1));
+        assertEquals(3, reading.codes().size());
+        assertEquals("P0420", reading.codes().get(0));
+        assertEquals("P0301", reading.codes().get(1));
+        assertEquals("P0171", reading.codes().get(2));
     }
 
     @Test
@@ -105,11 +125,11 @@ class DTCResponseParserTest {
     }
 
     @Test
-    void deveLancarExcecaoParaQuantidadeIncorreta() {
+    void deveLancarExcecaoParaDtcIncompleto() {
 
         assertThrows(
                 ObdResponseException.class,
-                () -> DTCResponseParser.parse("43 02 03 00", "03")
+                () -> DTCResponseParser.parse("43 03 00 01 15 04", "03")
         );
     }
 }

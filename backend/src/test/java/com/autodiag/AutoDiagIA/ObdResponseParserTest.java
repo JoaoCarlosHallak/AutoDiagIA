@@ -120,17 +120,16 @@ class ObdResponseParserTest {
     @Test
     @DisplayName("Deve interpretar com sucesso Códigos de Falha DTC (Modo 03)")
     void deveInterpretarCodigosDtcAtuais() {
-        // Resposta Mode 03 (43) contendo dois DTCs: P0300 (cilindro falhando) e P0115 (sensor arrefecimento)
-        // P0300 -> binário/hex: 00 00 11 00 00 00 00 -> 03 00
-        // P0115 -> 01 15
-        String rawResponse = "43 02 03 00 01 15";
+        // Resposta Mode 03 (43) contendo P0301, P0171 e P0420.
+        String rawResponse = "43 03 01 01 71 04 20";
         
         DTCReading dtcReading = DTCResponseParser.parse(rawResponse, "03");
 
         assertEquals("03", dtcReading.mode());
-        assertEquals(2, dtcReading.codes().size());
-        assertEquals("P0300", dtcReading.codes().get(0));
-        assertEquals("P0115", dtcReading.codes().get(1));
+        assertEquals(3, dtcReading.codes().size());
+        assertEquals("P0301", dtcReading.codes().get(0));
+        assertEquals("P0171", dtcReading.codes().get(1));
+        assertEquals("P0420", dtcReading.codes().get(2));
     }
 
     @Test
@@ -138,7 +137,7 @@ class ObdResponseParserTest {
     void deveRejeitarDtcInvalido() {
         assertThrows(
                 ObdResponseException.class,
-                () -> DTCResponseParser.parse("43 03 03", "03")
+                () -> DTCResponseParser.parse("43 03 03 00 01 00", "03")
         );
     }
 

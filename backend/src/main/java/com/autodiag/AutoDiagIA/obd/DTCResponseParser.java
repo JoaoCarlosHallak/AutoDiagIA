@@ -57,50 +57,15 @@ public final class DTCResponseParser {
         // Remove o byte de resposta positiva.
         String data = normalized.substring(2);
 
-        int quantity;
-        int requiredLength;
-        int dataStart;
-
-        if ("0A".equals(normalizedMode)) {
-            // No modo 0A (DTCs permanentes), a resposta não contém byte de quantidade.
-            if (data.length() % 4 != 0) {
-                throw new ObdResponseException(
-                        "Quantidade de dados DTC permanente inválida."
-                );
-            }
-            quantity = data.length() / 4;
-            requiredLength = data.length();
-            dataStart = 0;
-        } else {
-            // Nos modos 03 e 07, o primeiro byte informa a quantidade de DTCs.
-            if (data.length() < 2) {
-                throw new ObdResponseException(
-                        "Byte de quantidade de DTCs ausente."
-                );
-            }
-
-            quantity = Integer.parseInt(data.substring(0, 2), 16);
-            requiredLength = 2 + (quantity * 4);
-
-            if (data.length() < requiredLength) {
-                throw new ObdResponseException(
-                        "Quantidade de DTCs declarada não corresponde aos dados recebidos."
-                );
-            }
-
-            // Bytes excedentes são preenchimento CAN e devem ser zeros.
-            String padding = data.substring(requiredLength);
-            if (!padding.matches("(?:00)*")) {
-                throw new ObdResponseException(
-                        "Dados excedentes inválidos na resposta DTC."
-                );
-            }
-            dataStart = 2;
+        if (data.length() % 4 != 0) {
+            throw new ObdResponseException(
+                    "Quantidade de dados DTC inválida."
+            );
         }
 
         List<String> dtcs = new ArrayList<>();
 
-        for (int i = dataStart; i < requiredLength; i += 4) {
+        for (int i = 0; i < data.length(); i += 4) {
 
             int a = Integer.parseInt(data.substring(i, i + 2), 16);
             int b = Integer.parseInt(data.substring(i + 2, i + 4), 16);
