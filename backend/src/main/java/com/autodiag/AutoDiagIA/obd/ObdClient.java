@@ -47,7 +47,7 @@ public class ObdClient {
         String response = elm327Client.sendCommand(command);
 
         System.out.println("Comando enviado: " + command);
-        System.out.println("Resposta recebida: [" + response + "]");
+        System.out.println("Resposta recebida: " + response );
 
         return DTCResponseParser.parse(response, command);
         }
