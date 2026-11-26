@@ -40,6 +40,8 @@ public class Elm327Client {
                 throw new IOException("Falha ao ativar protocolo automático: " + sp);
             }
 
+            
+
             // força a busca de protocolo agora
             String probe = sendCommand("0100", 15000);
 
