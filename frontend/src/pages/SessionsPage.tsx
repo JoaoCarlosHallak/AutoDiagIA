@@ -378,16 +378,19 @@ export function SessionsPage() {
     if (!template) return
 
     setStartReason(template.startReason)
-    setSelectedPids([...template.pids])
+    setSelectedPids(template.pids.filter((pid) => pid !== '01' && pid !== '41'))
     if (template.includeSessionSettings) {
       setIntervalMs(template.intervalMs ?? 1000)
       setMaxDurationMs(template.maxDurationMs ?? 300000)
-      setTriggerEnabled(template.trigger !== null)
-      if (template.trigger) {
-        setTriggerPid(template.trigger.pid)
-        setTriggerIndex(template.trigger.valueIndex)
-        setTriggerOperator(template.trigger.operator)
-        setTriggerValue(template.trigger.triggerValue)
+      const trigger = template.trigger?.pid === '01' || template.trigger?.pid === '41'
+        ? null
+        : template.trigger
+      setTriggerEnabled(trigger !== null)
+      if (trigger) {
+        setTriggerPid(trigger.pid)
+        setTriggerIndex(trigger.valueIndex)
+        setTriggerOperator(trigger.operator)
+        setTriggerValue(trigger.triggerValue)
       }
     }
   }

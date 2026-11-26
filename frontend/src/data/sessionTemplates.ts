@@ -35,7 +35,7 @@ export const SESSION_TEMPLATE_PRESETS: SessionTemplatePreset[] = [
     key: 'emissions-catalyst',
     name: 'Emissões e catalisador',
     startReason: 'Verificar monitores de emissões, sensores de oxigênio e temperaturas do catalisador.',
-    pids: ['01', '03', '13', '14', '15', '19', '1C', '3C', '3D', '41'],
+    pids: ['03', '13', '14', '15', '19', '1C', '3C', '3D'],
     includeSessionSettings: false,
     intervalMs: null,
     maxDurationMs: null,

@@ -7,12 +7,6 @@ export interface PidOption {
 
 export const PID_OPTIONS: PidOption[] = [
   {
-    code: '01',
-    name: 'Status do Monitor',
-    description: 'máscara de bits',
-    info: 'Informa quais monitores de emissões já executaram verificações e se o sistema encontrou alguma falha. A luz MIL pode estar acesa mesmo com o monitor ainda incompleto.',
-  },
-  {
     code: '03',
     name: 'Status do Sistema de Combustível',
     description: 'status',
@@ -203,12 +197,6 @@ export const PID_OPTIONS: PidOption[] = [
     name: 'Temp. do Catalisador (Lado 2)(V)',
     description: '°C',
     info: 'Temperatura do catalisador no banco 2. Compare com o banco 1 para verificar aquecimento desigual ou falhas específicas de um lado.',
-  },
-  {
-    code: '41',
-    name: 'Status do Monitor neste Ciclo de Condução',
-    description: 'máscara de bits',
-    info: 'Estado dos testes de emissões no ciclo atual. Indica se o monitor foi concluído e se não encontrou falha naquele período.',
   },
   {
     code: '42',
