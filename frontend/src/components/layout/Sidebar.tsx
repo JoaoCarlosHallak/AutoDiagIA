@@ -129,7 +129,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
                   overview: 'Mapa do veículo',
                   telemetry: 'Dados do veículo',
                   sessions: 'Coleta e histórico',
-                  dtc: 'Códigos de falha',
+                  dtc: 'Falhas, monitores e ECU',
                 }[section]}
               </span>
             </span>

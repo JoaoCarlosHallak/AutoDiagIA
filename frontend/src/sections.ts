@@ -35,8 +35,9 @@ export const SECTION_CONTENT: Record<SectionId, SectionContent> = {
     note: 'Nenhuma sessão está sendo carregada ou simulada nesta tela.',
   },
   dtc: {
-    label: 'DTC',
-    description: 'Códigos de falha e informações de diagnóstico.',
+    label: 'Diagnóstico',
+    description:
+      'Análise de falhas, sistemas de emissões e testes da unidade de controle.',
     placeholderTitle: 'Consulta DTC em preparação',
     placeholderDescription:
       'A consulta de códigos de falha será conectada ao backend em uma próxima etapa.',
