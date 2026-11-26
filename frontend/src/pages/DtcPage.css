@@ -348,6 +348,37 @@
   white-space: nowrap;
 }
 
+.diagnostic-mil-value {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.diagnostic-mil-icon {
+  width: 38px;
+  height: 30px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
+  transition:
+    color 160ms ease,
+    filter 160ms ease,
+    opacity 160ms ease;
+}
+
+.diagnostic-mil-icon.is-on {
+  color: #f2bf57;
+  filter: drop-shadow(0 0 5px rgb(242 191 87 / 48%));
+}
+
+.diagnostic-mil-icon.is-off,
+.diagnostic-mil-icon.is-unknown {
+  color: #68757b;
+  opacity: 0.48;
+}
+
 .diagnostic-metric small {
   color: var(--text-secondary);
   font-size: 9px;

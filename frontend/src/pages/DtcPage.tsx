@@ -292,12 +292,29 @@ export function DtcPage() {
         </article>
         <article className="diagnostic-metric">
           <span>Estado da MIL</span>
-          <strong>
-            {monitorSinceClear
-              ? monitorSinceClear.milOn
-                ? 'Acesa'
-                : 'Apagada'
-              : '—'}
+          <strong className="diagnostic-mil-value">
+            <svg
+              aria-hidden="true"
+              className={`diagnostic-mil-icon ${
+                monitorSinceClear
+                  ? monitorSinceClear.milOn
+                    ? 'is-on'
+                    : 'is-off'
+                  : 'is-unknown'
+              }`}
+              fill="none"
+              viewBox="0 0 48 36"
+            >
+              <path d="M7 14h6l4-5h11l4 5h5l4 4h4v11h-8l-4 4H15l-4-4H7z" />
+              <path d="M19 9V5h8v4M17 19v6m10-6v6M7 19H3v7h4" />
+            </svg>
+            <span>
+              {monitorSinceClear
+                ? monitorSinceClear.milOn
+                  ? 'Acesa'
+                  : 'Apagada'
+                : '—'}
+            </span>
           </strong>
           <small>
             {monitorSinceClear
