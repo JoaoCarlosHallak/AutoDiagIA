@@ -1,8 +1,7 @@
 package com.autodiag.AutoDiagIA.service;
 
-import com.autodiag.AutoDiagIA.dto.CreateSessionRequest;
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
-import com.autodiag.AutoDiagIA.entity.Session;
+import com.autodiag.AutoDiagIA.dto.session.CreateSessionRequest;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 
 import java.util.List;
 

@@ -2,7 +2,7 @@ package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
 import com.autodiag.AutoDiagIA.entity.Session;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;

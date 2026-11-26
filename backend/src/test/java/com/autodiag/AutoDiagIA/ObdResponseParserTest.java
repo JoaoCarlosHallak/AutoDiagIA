@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 import com.autodiag.AutoDiagIA.obd.DTCReading;
 import com.autodiag.AutoDiagIA.obd.DTCResponseParser;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.obd.ObdResponseParser;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
 
@@ -14,12 +15,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ObdResponseParserTest {
 
+    private ObdReading parseReading(String response, String pid) {
+        ObdResponse parsed = ObdResponseParser.parse(response, ObdPid.fromString(pid));
+        return assertInstanceOf(ObdReading.class, parsed);
+    }
+
     @Test
     @DisplayName("Deve interpretar corretamente a Temperatura do Líquido de Arrefecimento (PID 05)")
     void deveInterpretarTemperaturaDoLiquidoDeArrefecimento() {
         // Fórmula: A - 40 -> 135 - 40 = 95°C
-        ObdReading reading = ObdResponseParser.parse(
-                "41 05 87", ObdPid.fromString("05"));
+        ObdReading reading = parseReading("41 05 87", "05");
 
         assertEquals("05", reading.pid());
         assertEquals(95.0, reading.values().getFirst().value(), 0.001);
@@ -30,8 +35,7 @@ class ObdResponseParserTest {
     @DisplayName("Deve interpretar corretamente a Rotação do Motor - RPM (PID 0C)")
     void deveInterpretarRotacaoDoMotor() {
         // Fórmula: ((A * 256) + B) / 4 -> ((23 * 256) + 220) / 4 = 6108 / 4 = 1527 RPM
-        ObdReading reading = ObdResponseParser.parse(
-                "41 0C 17 DC", ObdPid.fromString("0C"));
+        ObdReading reading = parseReading("41 0C 17 DC", "0C");
 
         assertEquals(1527.0, reading.values().getFirst().value(), 0.001);
         assertEquals("rpm", reading.values().getFirst().unit());
@@ -41,8 +45,7 @@ class ObdResponseParserTest {
     @DisplayName("Deve interpretar corretamente a Velocidade do Veículo (PID 0D)")
     void deveInterpretarVelocidadeSimulada() {
         // Fórmula: A -> F5 em hex = 245 km/h
-        ObdReading reading = ObdResponseParser.parse(
-                "41 0D F5", ObdPid.fromString("0D"));
+        ObdReading reading = parseReading("41 0D F5", "0D");
 
         assertEquals(245.0, reading.values().getFirst().value(), 0.001);
         assertEquals("km/h", reading.values().getFirst().unit());
@@ -53,8 +56,7 @@ class ObdResponseParserTest {
     void deveInterpretarTensaoDoSensorDeOxigenio() {
         // A = 83 (53 hex) -> 83 * 0.005 = 0.415 V
         // B = 255 (FF hex) -> 255 é 0xFF, logo o trim deve ser null
-        ObdReading reading = ObdResponseParser.parse(
-                "41 14 53 FF", ObdPid.fromString("14"));
+        ObdReading reading = parseReading("41 14 53 FF", "14");
 
         assertEquals(2, reading.values().size());
         assertEquals(0.415, reading.values().get(0).value(), 0.001);
@@ -64,8 +66,7 @@ class ObdResponseParserTest {
     @Test
     @DisplayName("Deve interpretar Sensor de Oxigênio de Ampla Faixa (PID 34)")
     void deveInterpretarSensorDeOxigenioDeAmplaFaixa() {
-        ObdReading reading = ObdResponseParser.parse(
-                "41 34 80 A7 80 00", ObdPid.fromString("34"));
+        ObdReading reading = parseReading("41 34 80 A7 80 00", "34");
 
         assertEquals(2, reading.values().size());
         assertEquals(1.0051, reading.values().get(0).value(), 0.001);
@@ -76,8 +77,7 @@ class ObdResponseParserTest {
     @DisplayName("Deve interpretar Tensão do Módulo de Comando/ECU (PID 42)")
     void deveInterpretarTensaoDoModulo() {
         // Fórmula: ((A * 256) + B) / 1000 -> ((51 * 256) + 255) / 1000 = 13311 / 1000 = 13.311 V
-        ObdReading reading = ObdResponseParser.parse(
-                "41 42 33 FF", ObdPid.fromString("42"));
+        ObdReading reading = parseReading("41 42 33 FF", "42");
 
         assertEquals(13.311, reading.values().getFirst().value(), 0.001);
         assertEquals("V", reading.values().getFirst().unit());
@@ -87,8 +87,7 @@ class ObdResponseParserTest {
     @DisplayName("Deve interpretar Pressão do Coletor de Admissão - MAP (PID 0B)")
     void deveInterpretarPressaoColetor() {
         // Fórmula: A -> 45 kPa
-        ObdReading reading = ObdResponseParser.parse(
-                "41 0B 2D", ObdPid.fromString("0B"));
+        ObdReading reading = parseReading("41 0B 2D", "0B");
 
         assertEquals(45.0, reading.values().getFirst().value(), 0.001);
         assertEquals("kPa", reading.values().getFirst().unit());
@@ -98,8 +97,7 @@ class ObdResponseParserTest {
     @DisplayName("Deve interpretar Avanço de Ignição (PID 0E)")
     void deveInterpretarAvancoIgnicao() {
         // Fórmula: (A / 2) - 64 -> Se A = 156 (9C hex): (156 / 2) - 64 = 78 - 64 = 14 graus
-        ObdReading reading = ObdResponseParser.parse(
-                "41 0E 9C", ObdPid.fromString("0E"));
+        ObdReading reading = parseReading("41 0E 9C", "0E");
 
         assertEquals(14.0, reading.values().getFirst().value(), 0.001);
         assertEquals("°", reading.values().getFirst().unit());

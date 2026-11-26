@@ -1,13 +1,12 @@
 package com.autodiag.AutoDiagIA.service;
 
-import java.io.IOException;
 import java.util.List;
 
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 
 public interface TelemetryService {
 
-    List<ObdReading> getPidsData(List<String> pids);
-    ObdReading getPidData(String name);
+    List<ObdResponse> getPidsData(List<String> pids);
+    ObdResponse getPidData(String name);
 
 }

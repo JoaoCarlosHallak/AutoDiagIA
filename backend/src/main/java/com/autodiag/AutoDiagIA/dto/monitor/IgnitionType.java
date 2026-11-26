@@ -1,4 +1,6 @@
 package com.autodiag.AutoDiagIA.dto.monitor;
 
-public record IgnitionType() {
+public enum IgnitionType {
+    SPARK_IGNITION,
+    COMPRESSION_IGNITION
 }

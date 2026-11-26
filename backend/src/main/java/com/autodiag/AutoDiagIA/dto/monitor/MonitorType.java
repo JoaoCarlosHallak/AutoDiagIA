@@ -1,4 +1,16 @@
 package com.autodiag.AutoDiagIA.dto.monitor;
 
 public enum MonitorType {
+
+    MISFIRE,
+    FUEL_SYSTEM,
+    COMPREHENSIVE_COMPONENTS,
+
+    CATALYST,
+    HEATED_CATALYST,
+    EVAPORATIVE_SYSTEM,
+    SECONDARY_AIR_SYSTEM,
+    OXYGEN_SENSOR,
+    OXYGEN_SENSOR_HEATER,
+    EGR_AND_VVT
 }

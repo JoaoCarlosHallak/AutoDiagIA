@@ -1,18 +1,16 @@
 package com.autodiag.AutoDiagIA.service;
 
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.entity.SessionPid;
 import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
-import com.autodiag.AutoDiagIA.exception.ObdResponseException;
-import com.autodiag.AutoDiagIA.obd.ObdClient;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.repository.SessionPidRepository;
 import com.autodiag.AutoDiagIA.repository.SessionRepository;
 import com.autodiag.AutoDiagIA.session.SessionEndReason;
 import com.autodiag.AutoDiagIA.session.SessionStatus;
-import com.autodiag.AutoDiagIA.session.TriggerOperator;
 import com.autodiag.AutoDiagIA.telemetry.TelemetryCollector;
 
 import jakarta.annotation.PreDestroy;
@@ -21,7 +19,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +93,11 @@ public class SessionExecutionServiceImpl implements SessionExecutionService {
                 return;
             }
 
-            List<ObdReading> readings = telemetryCollector.collect(pids);
+            List<ObdResponse> responses = telemetryCollector.collect(pids);
+            List<ObdReading> readings = responses.stream()
+                    .filter(ObdReading.class::isInstance)
+                    .map(ObdReading.class::cast)
+                    .toList();
 
 
             Session session = modelMapper.map(sessionDTO, Session.class);

@@ -1,7 +1,7 @@
 package com.autodiag.AutoDiagIA.config;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.google.genai.Client;

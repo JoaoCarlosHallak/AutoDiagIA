@@ -1,5 +1,5 @@
 package com.autodiag.AutoDiagIA.telemetry;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
 import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
 import com.autodiag.AutoDiagIA.service.TelemetryService;
@@ -58,7 +58,7 @@ public class TelemetryScheduler {
 
         collectionTask = executor.scheduleAtFixedRate(() -> {
             try {
-                List<ObdReading> readings =
+                List<ObdResponse> readings =
                         telemetryService.getPidsData(requestedPids);
 
                 readings.forEach(System.out::println);

@@ -1,8 +1,10 @@
 package com.autodiag.AutoDiagIA.obd;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
-import com.autodiag.AutoDiagIA.exception.ObdResponseException;
+
 import java.util.Locale;
 
 
@@ -19,7 +21,7 @@ public class ObdClient {
 
     }
 
-    public ObdReading readPid(ObdPid pid) {
+    public ObdResponse readPid(ObdPid pid) {
 
         String command = ObdCommand.commandToMode01(pid);
 

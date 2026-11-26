@@ -1,10 +1,11 @@
 package com.autodiag.AutoDiagIA.telemetry;
 
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 import com.autodiag.AutoDiagIA.obd.ObdClient;
 import com.autodiag.AutoDiagIA.obd.ObdPid;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
-import java.io.IOException;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,9 +22,9 @@ public class TelemetryCollector {
         this.obdClient = obdClient;
     }
 
-    public List<ObdReading> collect(List<ObdPid> pids) {
+    public List<ObdResponse> collect(List<ObdPid> pids) {
 
-        List<ObdReading> readings = new ArrayList<>();
+        List<ObdResponse> readings = new ArrayList<>();
 
         for (ObdPid pid : pids) {
             try {

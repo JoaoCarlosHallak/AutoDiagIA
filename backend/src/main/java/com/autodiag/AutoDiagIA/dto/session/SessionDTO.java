@@ -1,4 +1,4 @@
-package com.autodiag.AutoDiagIA.dto;
+package com.autodiag.AutoDiagIA.dto.session;
 
 import com.autodiag.AutoDiagIA.session.*;
 

@@ -1,7 +1,7 @@
 package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 import com.autodiag.AutoDiagIA.exception.AiServiceException;
 import com.autodiag.AutoDiagIA.util.PromptBuilder;
 import com.google.genai.Client;

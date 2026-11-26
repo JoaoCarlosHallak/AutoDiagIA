@@ -3,7 +3,7 @@ package com.autodiag.AutoDiagIA.service;
 import java.time.Instant;
 import java.util.List;
 
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 import com.autodiag.AutoDiagIA.session.SessionEndReason;
 import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
@@ -13,7 +13,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.autodiag.AutoDiagIA.dto.CreateSessionRequest;
+import com.autodiag.AutoDiagIA.dto.session.CreateSessionRequest;
 import com.autodiag.AutoDiagIA.entity.Session;
 import com.autodiag.AutoDiagIA.entity.SessionPid;
 import com.autodiag.AutoDiagIA.obd.ObdPid;

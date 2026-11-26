@@ -1,7 +1,7 @@
 package com.autodiag.AutoDiagIA.service;
 
-import com.autodiag.AutoDiagIA.dto.SessionTemplateDTO;
-import com.autodiag.AutoDiagIA.dto.SessionTemplateRequest;
+import com.autodiag.AutoDiagIA.dto.session.SessionTemplateDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionTemplateRequest;
 import com.autodiag.AutoDiagIA.entity.SessionTemplate;
 import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
 import com.autodiag.AutoDiagIA.exception.ResourceNotFoundException;

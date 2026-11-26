@@ -3,7 +3,6 @@ package com.autodiag.AutoDiagIA.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.autodiag.AutoDiagIA.dto.CollectionRequest;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.service.TelemetryService;
 import com.autodiag.AutoDiagIA.telemetry.TelemetryScheduler;
-import com.sun.net.httpserver.HttpServer;
 
 
 @RestController 
@@ -40,12 +38,12 @@ public class TelemetryController {
 
 
     @PostMapping("/pid")
-    public ResponseEntity<List<ObdReading>> getPidsData(@RequestBody List<String> pids) {
+    public ResponseEntity<List<ObdResponse>> getPidsData(@RequestBody List<String> pids) {
         return new ResponseEntity<>(telemetryService.getPidsData(pids), HttpStatus.OK);
     }
 
     @GetMapping("/pid")
-    public ResponseEntity<ObdReading> getPidData(@RequestParam String name) {
+    public ResponseEntity<ObdResponse> getPidData(@RequestParam String name) {
         return new ResponseEntity<>(telemetryService.getPidData(name), HttpStatus.OK);
     }
     

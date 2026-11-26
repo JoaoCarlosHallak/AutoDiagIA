@@ -1,4 +1,5 @@
-package com.autodiag.AutoDiagIA.obd;
+package com.autodiag.AutoDiagIA.dto;
 
-public interface ObdResponse {
+public sealed interface ObdResponse permits
+    ObdReading, MonitorStatusDTO, MonitorStatusCycleDTO {
 }

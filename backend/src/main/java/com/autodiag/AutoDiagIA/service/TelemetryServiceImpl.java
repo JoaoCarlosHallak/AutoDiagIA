@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.autodiag.AutoDiagIA.obd.ObdPid;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.telemetry.TelemetryCollector;
 
 @Service
@@ -25,7 +25,7 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
 
     @Override
-    public List<ObdReading> getPidsData(List<String> pids)  {
+    public List<ObdResponse> getPidsData(List<String> pids)  {
         if (pids == null || pids.isEmpty()) {
             throw new InvalidRequestException("Informe pelo menos um PID.");
         }
@@ -55,7 +55,7 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
 
     @Override 
-    public ObdReading getPidData(String name) {
+    public ObdResponse getPidData(String name) {
         ObdPid obdPid;
         try {
             obdPid = ObdPid.fromString(name);
@@ -63,7 +63,7 @@ public class TelemetryServiceImpl implements TelemetryService {
             throw new InvalidObdRequestException("PID inválido: " + name, e);
         }
 
-        List<ObdReading> readings = telemetryCollector.collect(List.of(obdPid));
+        List<ObdResponse> readings = telemetryCollector.collect(List.of(obdPid));
         if (readings.isEmpty()) {
             throw new ObdResponseException(
                     "Não foi possível obter uma leitura para o PID " + obdPid.getCode() + "."

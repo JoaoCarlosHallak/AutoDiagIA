@@ -1,10 +1,10 @@
 package com.autodiag.AutoDiagIA.service;
 
 import com.autodiag.AutoDiagIA.dto.LogDTO;
-import com.autodiag.AutoDiagIA.dto.SessionDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionDTO;
 import com.autodiag.AutoDiagIA.entity.Log;
 import com.autodiag.AutoDiagIA.entity.Session;
-import com.autodiag.AutoDiagIA.obd.ObdReading;
+import com.autodiag.AutoDiagIA.dto.ObdReading;
 import com.autodiag.AutoDiagIA.exception.InvalidOperationException;
 import com.autodiag.AutoDiagIA.exception.InvalidRequestException;
 import com.autodiag.AutoDiagIA.exception.ResourceNotFoundException;
@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Service

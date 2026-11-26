@@ -1,7 +1,7 @@
 package com.autodiag.AutoDiagIA.controller;
 
-import com.autodiag.AutoDiagIA.dto.SessionTemplateDTO;
-import com.autodiag.AutoDiagIA.dto.SessionTemplateRequest;
+import com.autodiag.AutoDiagIA.dto.session.SessionTemplateDTO;
+import com.autodiag.AutoDiagIA.dto.session.SessionTemplateRequest;
 import com.autodiag.AutoDiagIA.service.SessionTemplateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
