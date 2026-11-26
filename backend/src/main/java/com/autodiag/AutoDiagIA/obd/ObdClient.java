@@ -3,6 +3,7 @@ package com.autodiag.AutoDiagIA.obd;
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
 import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
+import com.autodiag.AutoDiagIA.exception.ObdResponseException;
 
 import java.util.Locale;
 
@@ -37,15 +38,10 @@ public class ObdClient {
         System.out.println("Comando enviado: " + ObdCommand.commandToMode04());
         System.out.println("Resposta recebida: " + response);
 
-        if (response.startsWith("44")){
-            System.out.println("Limpado com sucesso!");
+        if (response != null && response.trim().toUpperCase().startsWith("44")) {
             return null;
         }
-        System.out.println("Deu algum problema para efetuar a limpeza");
-        return null;
-
-
-
+        throw new ObdResponseException("A ECU não confirmou a limpeza dos DTCs.");
     }
 
 

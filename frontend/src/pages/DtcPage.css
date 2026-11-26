@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 14px;
   padding: 15px 17px;
@@ -246,6 +247,46 @@
   line-height: 1.45;
 }
 
+.dtc-success {
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  border: 1px solid rgb(97 214 189 / 24%);
+  border-radius: 7px;
+  background: rgb(97 214 189 / 7%);
+  color: var(--accent-soft);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.button-danger {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid rgb(231 129 116 / 32%);
+  border-radius: 7px;
+  background: rgb(231 129 116 / 9%);
+  color: #efb0a7;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color: rgb(231 129 116 / 55%);
+  background: rgb(231 129 116 / 15%);
+}
+
+.button-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dtc-clear-button {
+  margin-left: auto;
+}
+
 @media (max-width: 1040px) {
   .dtc-grid {
     grid-template-columns: 1fr;
@@ -259,9 +300,12 @@
 @media (max-width: 640px) {
   .dtc-toolbar {
     align-items: stretch;
+    flex-direction: column;
   }
 
-  .dtc-toolbar .button-primary {
+  .dtc-toolbar .button-primary,
+  .dtc-clear-button {
+    width: 100%;
     min-width: 124px;
   }
 

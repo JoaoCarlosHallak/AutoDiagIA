@@ -22,3 +22,7 @@ export async function readDtcs(type: DtcType): Promise<DtcReading> {
   }
   return response
 }
+
+export async function clearDtcs(): Promise<void> {
+  await requestApi('/dtc/clear', { method: 'POST' })
+}

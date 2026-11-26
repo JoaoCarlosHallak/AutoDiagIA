@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { readDtcs } from '../api/dtcService'
+import { useRef, useState } from 'react'
+import { clearDtcs, readDtcs } from '../api/dtcService'
 import {
   readMonitorStatusSinceClear,
   readMonitorStatusThisCycle,
@@ -121,10 +121,14 @@ function monitorState(monitor: MonitorDTO): {
 }
 
 export function DtcPage() {
+  const clearInFlightRef = useRef(false)
   const [activeTab, setActiveTab] = useState<DiagnosticTab>('dtc')
   const [readings, setReadings] = useState<Partial<Record<DtcType, DtcReading>>>({})
   const [loading, setLoading] = useState<DtcType[]>([])
   const [errors, setErrors] = useState<Partial<Record<DtcType, string>>>({})
+  const [isClearing, setIsClearing] = useState(false)
+  const [clearError, setClearError] = useState<string | null>(null)
+  const [clearMessage, setClearMessage] = useState<string | null>(null)
   const [monitorSinceClear, setMonitorSinceClear] =
     useState<MonitorStatusDTO | null>(null)
   const [monitorThisCycle, setMonitorThisCycle] =
@@ -142,7 +146,7 @@ export function DtcPage() {
   const sinceClearSummary = summarizeMonitors(monitorSinceClear)
 
   async function handleRead(type: DtcType) {
-    if (loading.includes(type)) {
+    if (isClearing || loading.includes(type)) {
       return
     }
 
@@ -159,11 +163,55 @@ export function DtcPage() {
   }
 
   async function handleReadAll() {
+    if (isClearing) {
+      return
+    }
     await Promise.all(DTC_TYPES.map(({ type }) => handleRead(type)))
   }
 
+  async function handleClearDtcs() {
+    if (
+      clearInFlightRef.current ||
+      isClearing ||
+      loading.length > 0 ||
+      monitorLoading.length > 0
+    ) {
+      return
+    }
+
+    clearInFlightRef.current = true
+    const confirmed = window.confirm(
+      'Tem certeza de que deseja apagar os códigos de falha da ECU? ' +
+        'Esta ação também reinicia os monitores de prontidão e não pode ser desfeita.',
+    )
+    if (!confirmed) {
+      clearInFlightRef.current = false
+      return
+    }
+
+    setIsClearing(true)
+    setClearError(null)
+    setClearMessage(null)
+    try {
+      await clearDtcs()
+      setReadings({})
+      setErrors({})
+      setMonitorSinceClear(null)
+      setMonitorThisCycle(null)
+      setMonitorErrors({})
+      setClearMessage(
+        'A ECU confirmou a limpeza. Consulte novamente os DTCs e monitores para obter o estado atualizado.',
+      )
+    } catch (error) {
+      setClearError(describeError(error))
+    } finally {
+      clearInFlightRef.current = false
+      setIsClearing(false)
+    }
+  }
+
   async function handleReadMonitor(context: ReadinessContext) {
-    if (monitorLoading.includes(context)) {
+    if (isClearing || monitorLoading.includes(context)) {
       return
     }
 
@@ -291,13 +339,28 @@ export function DtcPage() {
               </div>
               <button
                 className="button-primary"
-                disabled={loading.length > 0}
+                disabled={loading.length > 0 || monitorLoading.length > 0 || isClearing}
                 onClick={() => void handleReadAll()}
                 type="button"
               >
                 {loading.length > 0 ? 'Consultando…' : 'Consultar todos'}
               </button>
+              <button
+                className="button-danger dtc-clear-button"
+                disabled={loading.length > 0 || monitorLoading.length > 0 || isClearing}
+                onClick={() => void handleClearDtcs()}
+                type="button"
+              >
+                {isClearing ? 'Apagando…' : 'Apagar códigos da ECU'}
+              </button>
             </div>
+
+            {clearError && (
+              <p className="dtc-error" role="alert">{clearError}</p>
+            )}
+            {clearMessage && (
+              <p className="dtc-success" role="status">{clearMessage}</p>
+            )}
 
             <section className="dtc-info-box" aria-labelledby="dtc-format-title">
               <div className="dtc-info-symbol" aria-hidden="true">i</div>
@@ -378,7 +441,7 @@ export function DtcPage() {
 
                     <button
                       className="button-secondary dtc-read-button"
-                      disabled={isLoading || loading.length > 0}
+                      disabled={isLoading || loading.length > 0 || isClearing}
                       onClick={() => void handleRead(type)}
                       type="button"
                     >
@@ -498,7 +561,7 @@ export function DtcPage() {
 
                     <button
                       className="button-secondary dtc-read-button"
-                      disabled={isLoading}
+                      disabled={isLoading || isClearing}
                       onClick={() => void handleReadMonitor(card.context)}
                       type="button"
                     >
