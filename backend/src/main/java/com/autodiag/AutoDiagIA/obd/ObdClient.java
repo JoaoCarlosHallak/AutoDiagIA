@@ -1,7 +1,6 @@
 package com.autodiag.AutoDiagIA.obd;
 
 import com.autodiag.AutoDiagIA.communication.Elm327Client;
-import com.autodiag.AutoDiagIA.dto.ObdReading;
 import com.autodiag.AutoDiagIA.dto.ObdResponse;
 import com.autodiag.AutoDiagIA.exception.InvalidObdRequestException;
 
@@ -27,9 +26,25 @@ public class ObdClient {
 
         String response = elm327Client.sendCommand(command);
         System.out.println("Comando enviado: " + command);
-        System.out.println("Resposta recebida: [" + response + "]");
+        System.out.println("Resposta recebida: " + response + "");
 
         return ObdResponseParser.parse(response, pid);
+
+    }
+
+    public Void clearDtc(){
+        String response = elm327Client.sendCommand(ObdCommand.commandToMode04());
+        System.out.println("Comando enviado: " + ObdCommand.commandToMode04());
+        System.out.println("Resposta recebida: " + response);
+
+        if (response.startsWith("44")){
+            System.out.println("Limpado com sucesso!");
+            return null;
+        }
+        System.out.println("Deu algum problema para efetuar a limpeza");
+        return null;
+
+
 
     }
 
