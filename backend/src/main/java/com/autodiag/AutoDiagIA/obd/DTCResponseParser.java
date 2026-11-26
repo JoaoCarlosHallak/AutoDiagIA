@@ -57,6 +57,15 @@ public final class DTCResponseParser {
         // Remove o byte de resposta positiva.
         String data = normalized.substring(2);
 
+        // nenhum DTC identificado.
+        if (data.equals("00")) {
+            return new DTCReading(
+                    normalizedMode,
+                    List.of(),
+                    Instant.now()
+            );
+        }
+
         if (data.length() % 4 != 0) {
             throw new ObdResponseException(
                     "Quantidade de dados DTC inválida."
